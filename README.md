@@ -8,8 +8,9 @@ C++17 one-header library to parse ini files with some toml extensions.
 * Support for date and time in UTC
 * Support for time duration
 * Support for arrays, tables, inline tables
-* Keys and section names are case insensitive
-* Only ASCII
+* Keys and section names are case insensitive (downcased)
+* Keys are ASCII-only, but values can be UTF-8
+* Zero allocation parser
 * No dependencies
 
 
@@ -98,18 +99,18 @@ int main() {
   
   confetti::result const parsed = confetti::parse("example.ini");
   if(!parsed) {
-    cout << "Error at line " << parsed.line_no << ": " << parsed.message() << endl;
+    cout << "Error at line " << parsed.source.line_no << ": " << parsed.message << endl;
     return -1;
   }
   
   std::string const as_string = parsed.config["strings"]["string"].either("");
-  std::string_view as_view = parsed.config["strings"]["stringWithSpaces"].either(""sv);
+  std::string_view as_view = parsed.config["strings"]["stringwithspaces"].either(""sv);
   
-  if(parsed.config.contains("NUMBERS"))
-    cout << "Ok, section names and keys are case insensitive " << endl;
+  if(!parsed.config.contains("Numbers"))
+    cout << "All keys are downcased" << endl;
   
   confetti::table const&  numbers = parsed.config["numbers"]; // Will be empty if not exists
-  auto const positive = numbers["Positive"].either(0);
+  auto const positive = numbers["positive"].either(0);
   optional<int> const no_hex = numbers["hex"].to<int>();
   if(!no_hex)
     cout << "hex is unsigned" << endl;
@@ -117,10 +118,10 @@ int main() {
   
   auto const& dates = parsed.config["dates"];
   auto const no_time = chrono::system_clock::time_point{}; 
-  auto const in_utc = dates["dateAndTime"].either(no_time);
+  auto const in_utc = dates["dateandtime"].either(no_time);
   auto const no_duration = chrono::system_clock::duration{};
-  auto const six_hours = dates["timeAsDuration"].either(no_duration);
-  auto const ten_secs = dates["shortDuration"].either(no_duration);
+  auto const six_hours = dates["timeasduration"].either(no_duration);
+  auto const ten_secs = dates["shortduration"].either(no_duration);
   
   auto const& arrays = parsed.config["arrays"];
   // Parse array as vector of strings

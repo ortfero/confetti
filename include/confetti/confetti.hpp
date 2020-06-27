@@ -18,12 +18,16 @@
 #include <ctime>
 #include <type_traits>
 
+
+#include <iostream>
+
 #ifdef _MSC_VER
-#pragma warning(disable:4996) // "Unsafe" CRT Library functions
+#pragma warning(disable:4996) // "unsafe" CRT functions
 #endif
 
 
 namespace confetti {
+
 
 
 struct array;
@@ -56,10 +60,9 @@ namespace detail {
 
 
 
-  inline std::string& lower_case(std::string& s) {
-    for(auto& c: s)
-      c = lower_case(c);
-    return s;
+  inline void lower_case(char* head, char* tail) {
+    for(; head != tail; ++head)
+      *head = lower_case(*head);
   }
 
 
@@ -121,12 +124,24 @@ struct value {
 
   array* to_array() noexcept;
 
-  value const& operator [](std::string name) const noexcept;
+  template<std::size_t N>
+  value const& operator [](char const (&name)[N]) const noexcept {
+    return operator [](std::string_view{name, N - 1});
+  }
+
+  value const& operator [](std::string_view const& name) const noexcept;
 
 
   size_type size() const noexcept;
 
-  bool contains(std::string name) const noexcept;
+
+  template<std::size_t N>
+  bool contains(char const (&name)[N]) const noexcept {
+    return contains(std::string_view{name, N - 1});
+  }
+
+
+  bool contains(std::string_view const& name) const noexcept;
 
 
   std::string either(char const* bydefault) const {
@@ -164,25 +179,25 @@ struct value {
     switch(p->size()) {
       case 2:
         boolean = lower_case(cc[0]) == 'o'
-            && lower_case(cc[1]) == 'n';
+               && lower_case(cc[1]) == 'n';
         return boolean ? (result = true) : result;
       case 3:
         boolean = lower_case(cc[0]) == 'o'
-            && lower_case(cc[1]) == 'f'
-            && lower_case(cc[2]) == 'f';
+               && lower_case(cc[1]) == 'f'
+               && lower_case(cc[2]) == 'f';
         return boolean ? (result = false) : result;
       case 4:
         boolean = lower_case(cc[0]) == 't'
-            && lower_case(cc[1]) == 'r'
-            && lower_case(cc[2]) == 'u'
-            && lower_case(cc[3]) == 'e';
+               && lower_case(cc[1]) == 'r'
+               && lower_case(cc[2]) == 'u'
+               && lower_case(cc[3]) == 'e';
         return boolean ? (result = true) : result;
       case 5:
         boolean = lower_case(cc[0]) == 'f'
-            && lower_case(cc[1]) == 'a'
-            && lower_case(cc[2]) == 'l'
-            && lower_case(cc[3]) == 's'
-            && lower_case(cc[4]) == 'e';
+               && lower_case(cc[1]) == 'a'
+               && lower_case(cc[2]) == 'l'
+               && lower_case(cc[3]) == 's'
+               && lower_case(cc[4]) == 'e';
         return boolean ? (result = false) : result;
       default:
         return result;
@@ -486,7 +501,7 @@ struct array: std::vector<value> {
   array(array const&) = delete;
   array& operator = (array const&) = delete;
   array(array&&) = default;
-  array& operator = (array&&) noexcept = default;
+  array& operator = (array&&) = default;
 
   value const& operator [](size_type i) const noexcept {
     if(i >= base::size())
@@ -549,24 +564,31 @@ struct table {
   table(table const&) = delete;
   table& operator = (table const&) = delete;
   table(table&&) = default;
-  table& operator = (table&&) noexcept = default;
+  table& operator = (table&&) = default;
   size_type size() const noexcept { return map_.size(); }
   bool empty() const noexcept { return map_.empty(); }
 
-  value const& operator [] (std::string name) const noexcept {
-    auto const found = map_.find(detail::lower_case(name));
+
+  template<std::size_t N>
+  value const& operator [] (char const (&name)[N]) const noexcept {
+    return operator [](std::string_view{name, N - 1});
+  }
+
+
+  value const& operator [] (std::string_view const& name) const noexcept {
+    auto const found = map_.find(name);
     if(found == map_.end())
       return value::none();
     return found->second;
   }
 
 
-  void put(std::string const& name, value value) {
+  void put(std::string_view const& name, value value) {
     map_[name] = std::move(value);
   }
 
 
-  array* find_array(std::string const& name) noexcept {
+  array* find_array(std::string_view const& name) noexcept {
     auto const found = map_.find(name);
     if(found == map_.end()) {
       array_ptr new_array = std::make_unique<array>();
@@ -578,25 +600,33 @@ struct table {
   }
 
 
-  bool contains(std::string name) const noexcept {
-    return map_.find(detail::lower_case(name)) != map_.end();
+  template<std::size_t N>
+  bool contains(char const (&name)[N]) const noexcept {
+    return contains(std::string_view{name, N - 1});
+  }
+
+
+  bool contains(std::string_view const& name) const noexcept {
+    return map_.find(name) != map_.end();
   }
 
 
 private:
 
-  std::unordered_map<std::string, value> map_;
+  using map_type = std::unordered_map<std::string_view, value>;
+
+  map_type map_;
 
 }; // table
 
 
 
-inline value const& value::operator [](std::string name) const noexcept {
+inline value const& value::operator [](std::string_view const& name) const noexcept {
   table_ptr const* p = std::get_if<table_ptr>(&holder_);
   if(p == nullptr)
     return value::none();
   table const& table = *p->get();
-  return table[std::move(name)];
+  return table[name];
 }
 
 
@@ -611,39 +641,47 @@ inline value::size_type value::size() const noexcept {
 }
 
 
-inline bool value::contains(std::string name) const noexcept {
+inline bool value::contains(std::string_view const& name) const noexcept {
   table_ptr const* p = std::get_if<table_ptr>(&holder_);
   if(p == nullptr)
     return false;
   table const& table = *p->get();
-  return table.contains(std::move(name));
+  return table.contains(name);
 }
 
+
+
+namespace detail { struct parser; }
 
 
 
 struct config {
 
+  friend struct detail::parser;
+
   config() = default;
   config(config const&) = delete;
-  config& operator = (config const&) = delete;
-  config(config&&) = default;
-  config& operator = (config&&) noexcept = default;
+  config& operator = (config const&) = delete;  
+  config(config&& other) = default;
+  config& operator = (config&&) = default;
 
-  void source(std::unique_ptr<char[]> source) {
-    source_ = std::move(source);
+  table const& defaults() const noexcept {
+    return defaults_;
   }
 
-  void section(std::string name, table_ptr ptr) {
-    sections_[detail::lower_case(name)] = std::move(ptr);
+  template<std::size_t N>
+  bool contains(char const (&name)[N]) const noexcept {
+    if (N == 8 && strcmp(name, "default") == 0)
+      return true;
+    return contains(std::string_view{name, N - 1});
   }
 
-  bool contains(std::string s) const noexcept {
-    return sections_.find(detail::lower_case(s)) != sections_.end();
-  }
-
-  table const& operator [] (std::string name) const noexcept {
-    auto const found = sections_.find(detail::lower_case(name));
+  template<std::size_t N>
+  table const& operator [] (char const (&name)[N]) const noexcept {
+    if (N == 8 && strcmp(name, "default") == 0)
+      return defaults_;
+    std::string_view key{name, N - 1};
+    auto const found = sections_.find(key);
     if(found == sections_.end())
       return table::none();
     return *found->second;
@@ -652,8 +690,29 @@ struct config {
 
 private:
 
-  std::unordered_map<std::string, table_ptr> sections_;
+  using sections_type = std::unordered_map<std::string_view, table_ptr>;
+
+  sections_type sections_;
   std::unique_ptr<char[]> source_;
+  table defaults_;
+
+  void source(std::unique_ptr<char[]> source) {
+    source_ = std::move(source);
+  }
+
+  void put(std::string_view const& name, table_ptr ptr) {
+    sections_[name] = std::move(ptr);
+  }
+
+  bool contains(std::string_view const& name) const noexcept {
+    return sections_.find(name) != sections_.end();
+  }
+
+  table* default_section() noexcept {
+    return &defaults_;
+  }
+
+
 }; // config
 
 
@@ -679,14 +738,15 @@ struct source_line {
 struct result {
 
   enum code {
-    ok, unableToReadFile, invalidSectionName, invalidItemName, expectedEqualSign,
-    duplicatedItem, unexpectedCharsAfterValue, expectedValue, expectedQuote,
-    unexpectedEqualSign, expectedClosingArray, expectedCommaOrClosingArray,
-    expectedClosingTable, expectedCommaOrClosingTable,
-    expectedTableArrayName, expectedClosingTableArray
+    ok, unable_to_read_file, invalid_section_name, invalid_item_name, expected_equal_sign,
+    duplicated_item, unexpected_chars_after_value, expected_value, expected_quote,
+    unexpected_equal_sign, expected_closing_array, expected_comma_or_closing_array,
+    expected_closing_table, expected_comma_or_closing_table,
+    expected_table_array_name, expected_closing_table_array, invalid_byte_order_mark
   }; // code
 
   enum code code{ok};
+  char const* message{"Ok"};
   struct config config;
   source_line source;
 
@@ -698,60 +758,63 @@ struct result {
   explicit operator bool () const noexcept { return code == ok; }
 
   explicit result(struct config config):
-    code{ok}, config{std::move(config)}
+    config{std::move(config)}
   { }
+
 
   result(enum code code, source_line const& source) noexcept:
-    code{code}, source{source}
+    code{code}, message{message_for_code(code)}, source{source}
   { }
-
-
-
-  char const* message() const noexcept {
-    switch(code) {
-      case ok:
-        return "Ok";
-      case unableToReadFile:
-        return "Unable to read file";
-      case invalidSectionName:
-        return "Invalid section name";
-      case invalidItemName:
-        return "Invalid item name";
-      case expectedEqualSign:
-        return "Expected '=' after item name";
-      case duplicatedItem:
-        return "Duplicated item name";
-      case unexpectedCharsAfterValue:
-        return "Unexpected characters after item value";
-      case expectedValue:
-        return "Expected item value after '='";
-      case expectedQuote:
-        return "Expected closing quote for string";
-      case unexpectedEqualSign:
-        return "Unexpected '=' in item value";
-      case expectedClosingArray:
-        return "There is opened array, so expected ']'";
-      case expectedCommaOrClosingArray:
-        return "There is opened array, so expected ',' or ']'";
-      case expectedClosingTable:
-        return "There is opened inline table, so expected '}'";
-      case expectedCommaOrClosingTable:
-        return "There is opened inline table, so expected ',' or '}'";
-      case expectedTableArrayName:
-        return "Expected name of the table array inside [[ ]]";
-      case expectedClosingTableArray:
-        return "Expected ']]' after name of the table array";
-    }
-    return "Unknown";
-  }
 
 
   template<typename charT, typename traits> friend
     std::basic_ostream<charT, traits>&
       operator << (std::basic_ostream<charT, traits>& os, result const& r) noexcept {
-        os << r.message();
+        os << r.message;
         return os;
       }
+
+private:
+
+  static char const* message_for_code(enum code code) noexcept {
+    switch(code) {
+      case ok:
+        return "Ok";
+      case unable_to_read_file:
+        return "Unable to read file";
+      case invalid_section_name:
+        return "Invalid section name";
+      case invalid_item_name:
+        return "Invalid item name";
+      case expected_equal_sign:
+        return "Expected '=' after item name";
+      case duplicated_item:
+        return "Duplicated item name";
+      case unexpected_chars_after_value:
+        return "Unexpected characters after item value";
+      case expected_value:
+        return "Expected item value after '='";
+      case expected_quote:
+        return "Expected closing quote for string";
+      case unexpected_equal_sign:
+        return "Unexpected '=' in item value";
+      case expected_closing_array:
+        return "There is opened array, so expected ']'";
+      case expected_comma_or_closing_array:
+        return "There is opened array, so expected ',' or ']'";
+      case expected_closing_table:
+        return "There is opened inline table, so expected '}'";
+      case expected_comma_or_closing_table:
+        return "There is opened inline table, so expected ',' or '}'";
+      case expected_table_array_name:
+        return "Expected name of the table array inside [[ ]]";
+      case expected_closing_table_array:
+        return "Expected ']]' after name of the table array";
+      case invalid_byte_order_mark:
+        return "Invalid byte order mark, only UTF-8 is supported (0xEFBBBF)";
+    }
+    return "Unknown";
+  }
 
 }; // result
 
@@ -774,14 +837,28 @@ struct parser {
   result parse(std::unique_ptr<char[]> source) {
 
     config config;
-    table_ptr default_section = std::make_unique<table>();
-    table* current_section = default_section.get();
-    config.section("default", std::move(default_section));
+    table* current_section = config.default_section();
 
     if(!source)
       return result{std::move(config)};
 
     cursor_ = source.get();
+    switch(*cursor_) {
+      case char(0xEF):
+        ++cursor_;
+        if(*cursor_ != char(0xBB))
+          return result{result::invalid_byte_order_mark, get_current_position()};
+        ++cursor_;
+        if(*cursor_ != char(0xBF))
+          return result{result::invalid_byte_order_mark, get_current_position()};
+        ++cursor_;
+        break;
+      case char(0xFE): case char(0xFF):
+        return result{result::invalid_byte_order_mark, get_current_position()};
+      default:
+        break;
+    }
+
     config.source(std::move(source));
     get_current_line();
 
@@ -801,7 +878,7 @@ struct parser {
           } else {
             current_section = parse_section_name(config);
             if(!current_section)
-              return result{result::invalidSectionName, get_current_position()};
+              return result{result::invalid_section_name, get_current_position()};
           }
           continue;
         case '\0':
@@ -810,7 +887,7 @@ struct parser {
           if((rc = parse_key_value(*current_section)) != result::ok)
             return result{rc, get_current_position()};
           if(!skip_line())
-            return result{result::unexpectedCharsAfterValue, get_current_position()};
+            return result{result::unexpected_chars_after_value, get_current_position()};
           continue;
       }
   }
@@ -819,7 +896,7 @@ struct parser {
 
 private:
 
-  char const* cursor_{nullptr};
+  char* cursor_{nullptr};
   source_line line_;
 
 
@@ -926,7 +1003,7 @@ private:
   void skip_spaces() {
     for(;;)
       switch(*cursor_) {
-        case ' ': case '\t':
+        case ' ': case '\r': case '\t':
           ++cursor_; continue;
         default:
           return;
@@ -1009,27 +1086,27 @@ private:
     cursor_ += 2;
     skip_spaces();
     if(!is_letter(*cursor_))
-      return result::expectedTableArrayName;
+      return result::expected_table_array_name;
 
-    char const* head = cursor_;
+    char* head = cursor_;
 
     while(is_valid_for_identifier(*cursor_))
       ++cursor_;
-    char const* tail = cursor_;
+    char* tail = cursor_;
 
     skip_spaces();
     if(*cursor_++ != ']')
-      return result::expectedClosingTableArray;
+      return result::expected_closing_table_array;
     if(*cursor_++ != ']')
-      return result::expectedClosingTableArray;
+      return result::expected_closing_table_array;
 
 
-    auto name = std::string{head, tail};
-    detail::lower_case(name);
+    detail::lower_case(head, tail);
+    auto name = std::string_view{head, std::size_t(tail - head)};
 
     array* p = section.find_array(name);
     if(p == nullptr)
-      return result::duplicatedItem;
+      return result::duplicated_item;
 
     table_ptr new_table = std::make_unique<table>();
     enum result::code rc;
@@ -1047,7 +1124,7 @@ private:
           if(rc != result::ok)
             return rc;
           if(!skip_line())
-            return result::unexpectedCharsAfterValue;
+            return result::unexpected_chars_after_value;
           continue;
       }
     }
@@ -1065,17 +1142,18 @@ private:
     if(!is_letter(*cursor_))
       return nullptr;
 
-    char const* head = cursor_++;
+    char* head = cursor_++;
     while(is_valid_for_identifier(*cursor_))
       ++cursor_;
-    char const* tail = cursor_;
+    char* tail = cursor_;
 
     skip_spaces();
     if(*cursor_ != ']')
       return nullptr;
 
-    auto name = std::string{head, tail};
-    lower_case(name);
+    detail::lower_case(head, tail);
+    auto name = std::string_view{head, std::size_t(tail - head)};
+
 
     if(name != "default" && config.contains(name))
       return nullptr;
@@ -1087,7 +1165,7 @@ private:
     table_ptr section = std::make_unique<table>();
     table* current = section.get();
 
-    config.section(name, std::move(section));
+    config.put(name, std::move(section));
     return current;
   }
 
@@ -1096,22 +1174,23 @@ private:
   enum result::code parse_key_value(table& section) {
 
     if(!is_letter(*cursor_))
-      return result::invalidItemName;
+      return result::invalid_item_name;
 
-    char const* head = cursor_;
+    char* head = cursor_;
     while(is_valid_for_identifier(*cursor_))
       ++cursor_;
-    char const* tail = cursor_;
+    char* tail = cursor_;
 
     skip_spaces();
     if(*cursor_ != '=')
-      return result::expectedEqualSign;
+      return result::expected_equal_sign;
 
-    auto name = std::string{head, tail};
-    detail::lower_case(name);
+    detail::lower_case(head, tail);
+    auto name = std::string_view{head, std::size_t(tail - head)};
+
 
     if(section.contains(name))
-      return result::duplicatedItem;
+      return result::duplicated_item;
 
     ++cursor_;
 
@@ -1140,7 +1219,7 @@ private:
         return parse_inline_table(v);
       case '\n': case '\0':
       case '#': case ';':
-        return result::expectedValue;
+        return result::expected_value;
       default:
         return parse_sentense(v);
     }
@@ -1164,7 +1243,7 @@ private:
           ++cursor_;
           continue;
         case '\r': case '\n': case '\0':
-          return result::expectedQuote;
+          return result::expected_quote;
         default:
           ++cursor_;
           continue;
@@ -1196,7 +1275,7 @@ private:
     while(!end_of_array) {
 
       if(*cursor_ == '\0')
-        return result::expectedClosingArray;
+        return result::expected_closing_array;
 
       enum result::code const rc = parse_value(item);
       if(rc != result::ok)
@@ -1213,7 +1292,7 @@ private:
           ++cursor_; end_of_array = true;
           continue;
         default:
-          return result::expectedCommaOrClosingArray;
+          return result::expected_comma_or_closing_array;
       }
 
     }
@@ -1242,7 +1321,7 @@ private:
     while(!end_of_table) {
 
       if(*cursor_ == '\0')
-        return result::expectedClosingTable;
+        return result::expected_closing_table;
 
       enum result::code const rc = parse_key_value(*new_table);
       if(rc != result::ok)
@@ -1257,7 +1336,7 @@ private:
           ++cursor_; end_of_table = true;
           continue;
         default:
-          return result::expectedCommaOrClosingTable;
+          return result::expected_comma_or_closing_table;
       }
 
     }
@@ -1288,7 +1367,7 @@ private:
           end = true;
           continue;
         case '=':
-          return result::unexpectedEqualSign;
+          return result::unexpected_equal_sign;
         case '\0':
           end = true;
           continue;
@@ -1310,7 +1389,7 @@ private:
 inline std::unique_ptr<char[]> read_file(char const* file_name) {
   using namespace std;
   unique_ptr<char[]> source;
-  unique_ptr<FILE, int(*)(FILE*)> file{fopen(file_name, "r"), fclose};
+  unique_ptr<FILE, int(*)(FILE*)> file{fopen(file_name, "rb"), fclose};
   if(!file)
     return source;
   fseek(file.get(), 0, SEEK_END);
@@ -1321,6 +1400,7 @@ inline std::unique_ptr<char[]> read_file(char const* file_name) {
   fseek(file.get(), 0, SEEK_SET);
   size_t const was_read = fread(source.get(), 1, size_t(file_size), file.get());
   if(was_read != size_t(file_size)) {
+    printf("file size %d was read %zu\n", file_size, was_read);
     source.reset();
     return source;
   }
@@ -1344,15 +1424,20 @@ inline result parse_string(char const* source) {
 }
 
 
-
 inline result parse(char const* file_name) {
   using namespace std;
   std::unique_ptr<char[]> source = detail::read_file(file_name);
   if(!source)
-    return result{result::unableToReadFile, source_line{}};
+    return result{result::unable_to_read_file, source_line{}};
   detail::parser p;
   return p.parse(std::move(source));
 }
+
+
+inline result parse(std::string const& file_name) {
+  return parse(file_name.data());
+}
+
 
 
 }

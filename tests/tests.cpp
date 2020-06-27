@@ -11,7 +11,7 @@
 
 
 TEST_CASE("parse empty string") {
-
+  
   confetti::result r = confetti::parse_string(nullptr);
   REQUIRE(!!r);
   REQUIRE(r.config.contains("default"));
@@ -30,7 +30,7 @@ TEST_CASE("parse default section") {
   REQUIRE(r.config.contains("default"));
 
   r = confetti::parse_string("[default");
-  REQUIRE(r.code == confetti::result::invalidSectionName);
+  REQUIRE(r.code == confetti::result::invalid_section_name);
   REQUIRE(r.source.line_no == 1);
 }
 
@@ -78,19 +78,19 @@ TEST_CASE("parse inside section") {
 TEST_CASE("parse invalid configs") {
   confetti::result r = confetti::parse_string("key = 'foo' bar");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::unexpectedCharsAfterValue);
+  REQUIRE(r.code == confetti::result::unexpected_chars_after_value);
 
   r = confetti::parse_string("k1 = v1 k2 = v2");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::unexpectedEqualSign);
+  REQUIRE(r.code == confetti::result::unexpected_equal_sign);
 
   r = confetti::parse_string("k1 = v1\n k1 = v2");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::duplicatedItem);
+  REQUIRE(r.code == confetti::result::duplicated_item);
 
   r = confetti::parse_string("k1 = v1\n k2 = ");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::expectedValue);
+  REQUIRE(r.code == confetti::result::expected_value);
 
 }
 
@@ -103,7 +103,7 @@ TEST_CASE("parse boolean") {
                          "k5 = True\n" "k6 = False\n"
                          "k7 = ON\n" "k8 = OFF\n");
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   REQUIRE(section["k1"].either(false));
   REQUIRE(!section["k2"].either(true));
   REQUIRE(section["k3"].either(false));
@@ -121,7 +121,7 @@ TEST_CASE("parse integer") {
                          "k1 = -2147483648\n" "k2 = +2147483647\n"
                          "k3 = 0xFCED\n");
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   REQUIRE(section["k1"].either(-1) == -2147483647 - 1);
   REQUIRE(section["k2"].either(-1) == 2147483647);
   REQUIRE(section["k3"].either(-1) == -1);
@@ -134,7 +134,7 @@ TEST_CASE("parse unsigned") {
                          "k1 = 4294967295\n" "k2 = 0xFCED\n"
                          "k3 = 0x");
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   REQUIRE(section["k1"].either(1u) == 4294967295);
   REQUIRE(section["k2"].either(1u) == 0xFCED);
   REQUIRE(section["k3"].either(1u) == 1u);
@@ -147,7 +147,7 @@ TEST_CASE("parse long integer") {
                          "k1 = -9223372036854775808\n"
                          "k2 = 9223372036854775807\n");
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   REQUIRE(section["k1"].either(0ll) == -9223372036854775807 - 1);
   REQUIRE(section["k2"].either(0ll) == 9223372036854775807);
 }
@@ -158,7 +158,7 @@ TEST_CASE("parse double") {
   confetti::result r = confetti::parse_string(
                          "k1 = -3.14E+2\n");
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   REQUIRE(section["k1"].either(-1.) == -314.);
 }
 
@@ -171,7 +171,7 @@ TEST_CASE("parse string") {
                          "k3 = \"'foo'\"\n" "k4 = '\"bar\"'\n"
                          "k5 = foo' bar'\n");
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   REQUIRE(section["k1"].either("foo") == "");
   REQUIRE(section["k2"].either("bar") == "");
   REQUIRE(section["k3"].either("") == "'foo'");
@@ -189,7 +189,7 @@ TEST_CASE("parse string view") {
                          "k1 = \"\"\n" "k2 = ''\n"
                          "k3 = \"'foo'\"\n" "k4 = '\"bar\"'\n");
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   REQUIRE(section["k1"].either("foo"sv) == "");
   REQUIRE(section["k2"].either("bar"sv) == "");
   REQUIRE(section["k3"].either(""sv) == "'foo'");
@@ -206,7 +206,7 @@ TEST_CASE("parse date/time") {
                          "k3 = 1970:01:01\n");
 
   REQUIRE(!!r);
-  auto const& section = r.config["default"];
+  auto const& section = r.config.defaults();
   system_clock::time_point const zero = {};
   system_clock::time_point const tp1{seconds{1}};
 
@@ -310,3 +310,4 @@ TEST_CASE("parse array of tables") {
   REQUIRE(table2["k"].either("") == "bar");
   REQUIRE(table2["v"].either("") == "foo");
 }
+
