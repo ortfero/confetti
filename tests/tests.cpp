@@ -197,52 +197,6 @@ TEST_CASE("parse string view") {
 }
 
 
-TEST_CASE("parse date/time") {
-
-  using namespace std::chrono;
-
-  confetti::result r = confetti::parse_string(
-                         "k1 = 1970/01/01\n" "k2 = 1970-01-01 00:00:01\n"
-                         "k3 = 1970:01:01\n");
-
-  REQUIRE(!!r);
-  auto const& section = r.config.defaults();
-  system_clock::time_point const zero = {};
-  system_clock::time_point const tp1{seconds{1}};
-
-  REQUIRE(section["k1"].either(tp1) == zero);
-  REQUIRE(section["k2"].either(zero) == tp1);
-  REQUIRE(section["k3"].either(tp1) == tp1);
-}
-
-
-TEST_CASE("parse duration") {
-
-  using namespace  std::chrono;
-
-  confetti::result r = confetti::parse_string(
-                         "k1 = 12:12:12\n" "k2 = 12 microseconds\n"
-                         "k3 = 12 milliseconds\n" "k4 = 12 seconds\n"
-                         "k5 = 12 minutes\n" "k6 = 12 hours\n"
-                         "k7 = 1 day\n" "k8 = 1 week\n"
-                         "k9 = 12\n");
-
-  REQUIRE(!!r);
-  auto const& section = r.config["default"];
-  system_clock::duration const none = {};
-
-  REQUIRE(section["k1"].either(none) == hours{12} + minutes{12} + seconds{12});
-  REQUIRE(section["k2"].either(none) == microseconds{12});
-  REQUIRE(section["k3"].either(none) == milliseconds{12});
-  REQUIRE(section["k4"].either(none) == seconds{12});
-  REQUIRE(section["k5"].either(none) == minutes{12});
-  REQUIRE(section["k6"].either(none) == hours{12});
-  REQUIRE(section["k7"].either(none) == hours{24});
-  REQUIRE(section["k8"].either(none) == hours{24 * 7});
-  REQUIRE(section["k9"].either(none) == none);
-}
-
-
 TEST_CASE("parse array") {
 
   confetti::result r = confetti::parse_string(

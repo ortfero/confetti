@@ -1,25 +1,16 @@
 ﻿#pragma once
 
 
-
 #include <memory>
 #include <cstdio>
-#include <cstring>
 #include <string>
-#include <sstream>
 #include <string_view>
 #include <variant>
 #include <vector>
 #include <unordered_map>
 #include <optional>
 #include <charconv>
-#include <chrono>
-#include <iosfwd>
-#include <ctime>
-#include <type_traits>
 
-
-#include <iostream>
 
 #ifdef _MSC_VER
 #pragma warning(disable:4996) // "unsafe" CRT functions
@@ -274,88 +265,6 @@ struct value {
   }
 
 
-  template<> std::optional<std::chrono::system_clock::time_point> to() const {
-
-    std::optional<std::chrono::system_clock::time_point> result;
-
-    std::string_view const* p = std::get_if<std::string_view>(&holder_);
-    if(p == nullptr)
-      return result;
-
-    unsigned year, month, day, date_scanned;
-
-    if(std::sscanf(p->data(), "%u/%u/%u%n", &year, &month, &day, &date_scanned) != 3 &&
-       std::sscanf(p->data(), "%u-%u-%u%n", &year, &month, &day, &date_scanned) != 3)
-      return result;
-
-    if(date_scanned > p->size())
-      return result;
-
-    char const* after_date = p->data() + date_scanned;
-    unsigned hour = 0, minute = 0, second = 0, time_scanned;
-
-    if(date_scanned != p->size()) {
-
-      if(std::sscanf(after_date, "%u:%u:%u%n", &hour, &minute, &second, &time_scanned) != 3
-         || date_scanned + time_scanned != p->size())
-        return result;
-
-    }
-
-    struct tm tm = {int(second), int(minute), int(hour),
-                  int(day), int(month - 1), int(year - 1900), 0, 0, 0};
-    time_t const tp =
-#if _WIN32
-      _mkgmtime(&tm);
-#else
-      timegm(&tm);
-#endif
-
-    if(tp == -1)
-      return result;
-
-    return result = std::chrono::system_clock::from_time_t(tp);
-  }
-
-
-
-  template<> std::optional<std::chrono::system_clock::duration> to() const {
-
-    std::optional<std::chrono::system_clock::duration> result;
-
-    std::string_view const* p = std::get_if<std::string_view>(&holder_);
-    if(p == nullptr)
-      return result;
-
-    unsigned hour, minute, second, scanned;
-    if(std::sscanf(p->data(), "%u:%u:%u%n", &hour, &minute, &second, &scanned) == 3 &&
-       scanned == p->size()) {
-      return result = std::chrono::seconds{hour * 3600 + minute * 60 + second};
-    }
-
-    unsigned long long count; char unit[16];
-    if(std::sscanf(p->data(), "%llu %13s%n", &count, &unit, &scanned) == 2 &&
-       scanned == p->size()) {
-      if(strcmp(unit, "microseconds") == 0  || strcmp(unit, "microsecond") == 0)
-        return result = std::chrono::microseconds{count};
-      else if(strcmp(unit, "milliseconds") == 0  || strcmp(unit, "millisecond") == 0)
-        return result = std::chrono::milliseconds{count};
-      else if(strcmp(unit, "seconds") == 0 || strcmp(unit, "second") == 0)
-        return result = std::chrono::seconds{count};
-      else if(strcmp(unit, "minutes") == 0  || strcmp(unit, "minute") == 0)
-        return result = std::chrono::minutes{count};
-      else if(strcmp(unit, "hours") == 0 || strcmp(unit, "hour") == 0)
-        return result = std::chrono::hours{count};
-      else if(strcmp(unit, "days") == 0 || strcmp(unit, "day") == 0)
-        return result = std::chrono::hours{count * 24};
-      else if(strcmp(unit, "weeks") == 0 || strcmp(unit, "week") == 0)
-        return result = std::chrono::hours{count * 24 * 7};
-    }
-
-    return result;
-  }
-
-
   template<> std::optional<std::vector<bool>> to() const {
     return try_parse_array<bool>();
   }
@@ -393,18 +302,6 @@ struct value {
 
   template<> std::optional<std::vector<std::string_view>> to() const {
     return try_parse_array<std::string_view>();
-  }
-
-
-  template<> std::optional<std::vector<std::chrono::system_clock::time_point>>
-    to() const {
-      return try_parse_array<std::chrono::system_clock::time_point>();
-  }
-
-
-  template<> std::optional<std::vector<std::chrono::system_clock::duration>>
-    to() const {
-      return try_parse_array<std::chrono::system_clock::duration>();
   }
 
 

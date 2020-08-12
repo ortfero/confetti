@@ -5,8 +5,6 @@ C++17 one-header library to parse ini files with some toml extensions.
 
 ## Info
 
-* Support for date and time in UTC
-* Support for time duration
 * Support for arrays, tables, inline tables
 * Keys and section names are case insensitive (downcased)
 * Keys are ASCII-only, but values can be UTF-8
@@ -44,14 +42,6 @@ alternativeTrue = on
 alternativeFalse = OFF
 
 
-[dates]
-date = 1970/01/01
-anotherDate = 1982-02-15
-dateAndTime = 1982/02/15 06:00:00
-timeAsDuration = 06:00:00  # parsed as chrono::duration
-shortDuration = 10 seconds # microseconds, milliseconds, minutes, hours
-longDuration = 1 day # week
-
 [arrays]
 array = [feature1, feature2,
          feature3]
@@ -87,8 +77,6 @@ And how to read some of this
 #include <string>
 #include <string_view>
 #include <vector>
-#include <chrono>
-#include <optional>
 
 #include <confetti/confetti.hpp>
 
@@ -115,14 +103,7 @@ int main() {
   if(!no_hex)
     cout << "hex is unsigned" << endl;
   auto const sure_hex = numbers["hex"].either(0u);
-  
-  auto const& dates = parsed.config["dates"];
-  auto const no_time = chrono::system_clock::time_point{}; 
-  auto const in_utc = dates["dateandtime"].either(no_time);
-  auto const no_duration = chrono::system_clock::duration{};
-  auto const six_hours = dates["timeasduration"].either(no_duration);
-  auto const ten_secs = dates["shortduration"].either(no_duration);
-  
+    
   auto const& arrays = parsed.config["arrays"];
   // Parse array as vector of strings
   auto const& features_list = arrays["array"].either(vector<string>{});
