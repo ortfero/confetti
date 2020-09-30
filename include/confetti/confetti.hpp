@@ -741,16 +741,16 @@ struct parser {
 
     cursor_ = source.get();
     switch(*cursor_) {
-      case char(0xEF):
+      case unsigned char(0xEF):
         ++cursor_;
-        if(*cursor_ != char(0xBB))
+        if(*cursor_ != unsigned char(0xBB))
           return result{result::invalid_byte_order_mark, get_current_position()};
         ++cursor_;
-        if(*cursor_ != char(0xBF))
+        if(*cursor_ != unsigned char(0xBF))
           return result{result::invalid_byte_order_mark, get_current_position()};
         ++cursor_;
         break;
-      case char(0xFE): case char(0xFF):
+      case unsigned char(0xFE): case unsigned char(0xFF):
         return result{result::invalid_byte_order_mark, get_current_position()};
       default:
         break;
