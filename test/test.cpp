@@ -2,11 +2,10 @@
 //#define _CRT_SECURE_NO_WARNINGS
 //#endif
 
+#include <confetti/confetti.hpp>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
-
-#include <confetti/confetti.hpp>
+#include "doctest.h"
 
 
 
