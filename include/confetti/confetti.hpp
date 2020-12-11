@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -231,11 +232,18 @@ struct value {
     if(*head == '+')
       ++head;
 
+#ifdef _MSC_VER
     double number;
     auto const parsed = std::from_chars(head, tail, number);
 
     if(parsed.ec == std::errc::invalid_argument)
       return result;
+#else
+    char* endptr;
+    double number = std::strtod(head, &endptr);
+    if(endptr != tail)
+      return result;
+#endif
 
     return result = number;
   }
@@ -740,17 +748,18 @@ struct parser {
       return result{std::move(config)};
 
     cursor_ = source.get();
-    switch(*cursor_) {
-      case unsigned char(0xEF):
+    using uchar = unsigned char;
+    switch(uchar(*cursor_)) {
+      case uchar(0xEF):
         ++cursor_;
-        if(*cursor_ != unsigned char(0xBB))
+        if(uchar(*cursor_) != uchar(0xBB))
           return result{result::invalid_byte_order_mark, get_current_position()};
         ++cursor_;
-        if(*cursor_ != unsigned char(0xBF))
+        if(uchar(*cursor_) != uchar(0xBF))
           return result{result::invalid_byte_order_mark, get_current_position()};
         ++cursor_;
         break;
-      case unsigned char(0xFE): case unsigned char(0xFF):
+      case uchar(0xFE): case uchar(0xFF):
         return result{result::invalid_byte_order_mark, get_current_position()};
       default:
         break;
@@ -1297,7 +1306,6 @@ inline std::unique_ptr<char[]> read_file(char const* file_name) {
   fseek(file.get(), 0, SEEK_SET);
   size_t const was_read = fread(source.get(), 1, size_t(file_size), file.get());
   if(was_read != size_t(file_size)) {
-    printf("file size %d was read %zu\n", file_size, was_read);
     source.reset();
     return source;
   }
