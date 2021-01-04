@@ -268,3 +268,16 @@ TEST_CASE("parse array of tables") {
   REQUIRE_EQ(table2["v"] | "", "foo");
 }
 
+
+TEST_CASE("parse matrix") {
+    confetti::result r = confetti::parse_string(
+                            "matrix = [[1, 2],\n"
+                            "          [3, 4]]\n");
+    REQUIRE(r);
+    auto const& matrix = r.config["default"]["matrix"];
+    auto const d1 = (matrix[0][0] | 0) + (matrix[1][1] | 0);
+    REQUIRE_EQ(d1, 5);
+    auto const d2 = (matrix[0][1] | 0) + (matrix[1][0] | 0);
+    REQUIRE_EQ(d2, 5);
+}
+
