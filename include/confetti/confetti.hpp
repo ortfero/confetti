@@ -542,13 +542,13 @@ inline bool value::contains(std::string_view const& name) const noexcept {
 
 
 
-namespace detail { struct parser; }
+namespace detail { class parser; }
 
 
 
 struct config {
 
-  friend struct detail::parser;
+  friend class detail::parser;
 
   config() = default;
   config(config const&) = delete;
