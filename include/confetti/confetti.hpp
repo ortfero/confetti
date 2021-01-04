@@ -21,20 +21,15 @@
 namespace confetti {
 
 
-
 struct array;
 using array_ptr = std::unique_ptr<array>;
-
 
 
 struct table;
 using table_ptr = std::unique_ptr<table>;
 
 
-
-namespace detail {
-
-
+namespace detail::ascii {
 
   inline char lower_case(char c) {
     switch(c) {
@@ -50,24 +45,21 @@ namespace detail {
     }
   }
 
-
-
   inline void lower_case(char* head, char* tail) {
     for(; head != tail; ++head)
       *head = lower_case(*head);
   }
 
-
-
-} // detail
+} // detail::ascii
 
 
 
-struct value {
+class value {
+public:
 
   using size_type = size_t;
 
-  static value const& none() { static value x; return x; }
+  static value const none;
 
   value() noexcept = default;
   value(value const&) = delete;
@@ -136,191 +128,14 @@ struct value {
   bool contains(std::string_view const& name) const noexcept;
 
 
-  std::string either(char const* bydefault) const {
-    auto const maybe = to<std::string>();
-    if(!maybe)
-      return std::string{bydefault};
-    return *maybe;
-  }
-
-
-  template<typename T> T either(T const& bydefault) const {
-
-    auto maybe = to<T>();
-    if(!maybe)
-      return bydefault;
-
-    return *maybe;
-  }
-
-
   template<typename T> std::optional<T> to() const = delete;
-
-
-  template<> std::optional<bool> to() const {
-
-    using detail::lower_case;
-    std::optional<bool> result;
-
-    std::string_view const* p = std::get_if<std::string_view>(&holder_);
-    if(p == nullptr)
-      return result;
-    bool boolean;
-    char const* cc = p->data();
-
-    switch(p->size()) {
-      case 2:
-        boolean = lower_case(cc[0]) == 'o'
-               && lower_case(cc[1]) == 'n';
-        return boolean ? (result = true) : result;
-      case 3:
-        boolean = lower_case(cc[0]) == 'o'
-               && lower_case(cc[1]) == 'f'
-               && lower_case(cc[2]) == 'f';
-        return boolean ? (result = false) : result;
-      case 4:
-        boolean = lower_case(cc[0]) == 't'
-               && lower_case(cc[1]) == 'r'
-               && lower_case(cc[2]) == 'u'
-               && lower_case(cc[3]) == 'e';
-        return boolean ? (result = true) : result;
-      case 5:
-        boolean = lower_case(cc[0]) == 'f'
-               && lower_case(cc[1]) == 'a'
-               && lower_case(cc[2]) == 'l'
-               && lower_case(cc[3]) == 's'
-               && lower_case(cc[4]) == 'e';
-        return boolean ? (result = false) : result;
-      default:
-        return result;
-    }
-
-  }
-
-
-  template<> std::optional<int> to() const {
-    return try_parse_signed<int>();
-  }
-
-
-  template<> std::optional<unsigned> to() const {
-    return try_parse_unsigned<unsigned>();
-  }
-
-
-  template<> std::optional<long long> to() const {
-    return try_parse_signed<long long>();
-  }
-
-
-  template<> std::optional<unsigned long long> to() const {
-    return try_parse_unsigned<unsigned long long>();
-  }
-
-
-  template<> std::optional<double> to() const {
-
-    std::optional<double> result;
-
-    std::string_view const* p = std::get_if<std::string_view>(&holder_);
-    if(p == nullptr)
-      return result;
-
-    char const* head = p->data();
-    char const* tail = p->data() + p->size();
-
-    if(*head == '+')
-      ++head;
-
-#ifdef _MSC_VER
-    double number;
-    auto const parsed = std::from_chars(head, tail, number);
-
-    if(parsed.ec == std::errc::invalid_argument)
-      return result;
-#else
-    char* endptr;
-    double number = std::strtod(head, &endptr);
-    if(endptr != tail)
-      return result;
-#endif
-
-    return result = number;
-  }
-
-
-  template<> std::optional<std::string> to() const {
-
-    std::optional<std::string> result;
-
-    std::string_view const* p = std::get_if<std::string_view>(&holder_);
-    if(p == nullptr)
-      return result;
-
-    return result = std::string{p->begin(), p->end()};
-  }
-
-
-  template<> std::optional<std::string_view> to() const {
-
-    std::optional<std::string_view> result;
-
-    std::string_view const* p = std::get_if<std::string_view>(&holder_);
-    if(p == nullptr)
-      return result;
-
-    return result = *p;
-  }
-
-
-  template<> std::optional<std::vector<bool>> to() const {
-    return try_parse_array<bool>();
-  }
-
-
-  template<> std::optional<std::vector<int>> to() const {
-    return try_parse_array<int>();
-  }
-
-
-  template<> std::optional<std::vector<unsigned>> to() const {
-    return try_parse_array<unsigned>();
-  }
-
-
-  template<> std::optional<std::vector<long long>> to() const {
-    return try_parse_array<long long>();
-  }
-
-
-  template<> std::optional<std::vector<unsigned long long>> to() const {
-    return try_parse_array<unsigned long long>();
-  }
-
-
-  template<> std::optional<std::vector<double>> to() const {
-    return try_parse_array<double>();
-  }
-
-
-  template<> std::optional<std::vector<std::string>> to() const {
-    return try_parse_array<std::string>();
-  }
-
-
-  template<> std::optional<std::vector<std::string_view>> to() const {
-    return try_parse_array<std::string_view>();
-  }
-
 
 private:
 
   std::variant<std::monostate, std::string_view, array_ptr, table_ptr> holder_;
 
 
-
   template <typename T> std::optional<std::vector<T>> try_parse_array() const;
-
 
 
   template<typename T> std::optional<T> try_parse_signed() const noexcept {
@@ -394,6 +209,179 @@ private:
 }; // value
 
 
+inline value const value::none;
+
+
+template<> std::optional<bool> value::to() const {
+
+    using detail::ascii::lower_case;
+    std::optional<bool> result;
+
+    std::string_view const* p = std::get_if<std::string_view>(&holder_);
+    if(p == nullptr)
+      return result;
+    bool boolean;
+    char const* cc = p->data();
+
+    switch(p->size()) {
+      case 2:
+        boolean = lower_case(cc[0]) == 'o'
+               && lower_case(cc[1]) == 'n';
+        return boolean ? (result = true) : result;
+      case 3:
+        boolean = lower_case(cc[0]) == 'o'
+               && lower_case(cc[1]) == 'f'
+               && lower_case(cc[2]) == 'f';
+        return boolean ? (result = false) : result;
+      case 4:
+        boolean = lower_case(cc[0]) == 't'
+               && lower_case(cc[1]) == 'r'
+               && lower_case(cc[2]) == 'u'
+               && lower_case(cc[3]) == 'e';
+        return boolean ? (result = true) : result;
+      case 5:
+        boolean = lower_case(cc[0]) == 'f'
+               && lower_case(cc[1]) == 'a'
+               && lower_case(cc[2]) == 'l'
+               && lower_case(cc[3]) == 's'
+               && lower_case(cc[4]) == 'e';
+        return boolean ? (result = false) : result;
+      default:
+        return result;
+    }
+
+}
+
+
+template<> std::optional<int> value::to() const {
+    return try_parse_signed<int>();
+}
+
+
+template<> std::optional<unsigned> value::to() const {
+    return try_parse_unsigned<unsigned>();
+}
+
+
+template<> std::optional<long long> value::to() const {
+    return try_parse_signed<long long>();
+}
+
+
+template<> std::optional<unsigned long long> value::to() const {
+    return try_parse_unsigned<unsigned long long>();
+}
+
+
+template<> std::optional<double> value::to() const {
+
+    std::optional<double> result;
+
+    std::string_view const* p = std::get_if<std::string_view>(&holder_);
+    if(p == nullptr)
+      return result;
+
+    char const* head = p->data();
+    char const* tail = p->data() + p->size();
+
+    if(*head == '+')
+      ++head;
+
+    #ifdef _MSC_VER
+    double number;
+    auto const parsed = std::from_chars(head, tail, number);
+
+    if(parsed.ec == std::errc::invalid_argument)
+      return result;
+    #else
+    char* endptr;
+    double number = std::strtod(head, &endptr);
+    if(endptr != tail)
+      return result;
+    #endif
+
+    return result = number;
+}
+
+
+template<> std::optional<std::string> value::to() const {
+    std::optional<std::string> result;
+
+    std::string_view const* p = std::get_if<std::string_view>(&holder_);
+    if(p == nullptr)
+      return result;
+
+    return result = std::string{p->begin(), p->end()};
+}
+
+
+template<> std::optional<std::string_view> value::to() const {
+    std::optional<std::string_view> result;
+
+    std::string_view const* p = std::get_if<std::string_view>(&holder_);
+    if(p == nullptr)
+      return result;
+
+    return result = *p;
+}
+
+
+template<> std::optional<std::vector<bool>> value::to() const {
+    return try_parse_array<bool>();
+}
+
+
+template<> std::optional<std::vector<int>> value::to() const {
+return try_parse_array<int>();
+}
+
+
+template<> std::optional<std::vector<unsigned>> value::to() const {
+return try_parse_array<unsigned>();
+}
+
+
+template<> std::optional<std::vector<long long>> value::to() const {
+return try_parse_array<long long>();
+}
+
+
+template<> std::optional<std::vector<unsigned long long>> value::to() const {
+return try_parse_array<unsigned long long>();
+}
+
+
+template<> std::optional<std::vector<double>> value::to() const {
+return try_parse_array<double>();
+}
+
+
+template<> std::optional<std::vector<std::string>> value::to() const {
+return try_parse_array<std::string>();
+}
+
+
+template<> std::optional<std::vector<std::string_view>> value::to() const {
+return try_parse_array<std::string_view>();
+}
+
+
+std::string operator | (value const& v, char const* bydefault) {
+	auto const maybe = v.to<std::string>();
+	if(!maybe)
+        return std::string{bydefault};
+	return *maybe;
+}
+
+
+template<typename T>
+T operator | (value const& v, T const& bydefault) {
+    auto maybe = v.to<T>();
+    if(!maybe)
+        return bydefault;
+    return *maybe;
+}
+
 
 struct array: std::vector<value> {
 
@@ -410,7 +398,7 @@ struct array: std::vector<value> {
 
   value const& operator [](size_type i) const noexcept {
     if(i >= base::size())
-      return value::none();
+      return value::none;
     return base::operator[](i);
   }
 
@@ -422,7 +410,7 @@ struct array: std::vector<value> {
 inline value const& value::operator [](size_type i) const noexcept {
   array_ptr const* p = std::get_if<array_ptr>(&holder_);
   if(p == nullptr)
-    return value::none();
+    return value::none;
   array const& array = *p->get();
   return array[i];
 }
@@ -483,7 +471,7 @@ struct table {
   value const& operator [] (std::string_view const& name) const noexcept {
     auto const found = map_.find(name);
     if(found == map_.end())
-      return value::none();
+      return value::none;
     return found->second;
   }
 
@@ -529,7 +517,7 @@ private:
 inline value const& value::operator [](std::string_view const& name) const noexcept {
   table_ptr const* p = std::get_if<table_ptr>(&holder_);
   if(p == nullptr)
-    return value::none();
+    return value::none;
   table const& table = *p->get();
   return table[name];
 }
@@ -623,14 +611,6 @@ private:
 
 
 struct source_line {
-  source_line() noexcept = default;
-  source_line(source_line const&) noexcept = default;
-  source_line& operator = (source_line const&) = default;
-
-  source_line(std::string_view const& text, unsigned line_no,
-              unsigned column_no) noexcept:
-    text{text}, line_no{line_no}, column_no{column_no}
-  { }
 
   std::string_view text;
   unsigned line_no{0};
@@ -640,14 +620,15 @@ struct source_line {
 
 
 
-struct result {
+class result {
+public:
 
   enum code {
     ok, unable_to_read_file, invalid_section_name, invalid_item_name, expected_equal_sign,
     duplicated_item, unexpected_chars_after_value, expected_value, expected_quote,
     unexpected_equal_sign, expected_closing_array, expected_comma_or_closing_array,
-    expected_closing_table, expected_comma_or_closing_table,
-    expected_table_array_name, expected_closing_table_array, invalid_byte_order_mark
+    expected_closing_table, expected_comma_or_closing_table, expected_table_array_name,
+	expected_closing_table_array, invalid_byte_order_mark
   }; // code
 
   enum code code{ok};
@@ -729,7 +710,8 @@ namespace detail {
 
 
 
-struct parser {
+class parser {
+public:
 
   parser() = default;
   parser(parser const&) = delete;
@@ -1007,7 +989,7 @@ private:
       return result::expected_closing_table_array;
 
 
-    detail::lower_case(head, tail);
+    detail::ascii::lower_case(head, tail);
     auto name = std::string_view{head, std::size_t(tail - head)};
 
     array* p = section.find_array(name);
@@ -1057,7 +1039,7 @@ private:
     if(*cursor_ != ']')
       return nullptr;
 
-    detail::lower_case(head, tail);
+    detail::ascii::lower_case(head, tail);
     auto name = std::string_view{head, std::size_t(tail - head)};
 
 
@@ -1076,7 +1058,6 @@ private:
   }
 
 
-
   enum result::code parse_key_value(table& section) {
 
     if(!is_letter(*cursor_))
@@ -1091,7 +1072,7 @@ private:
     if(*cursor_ != '=')
       return result::expected_equal_sign;
 
-    detail::lower_case(head, tail);
+    detail::ascii::lower_case(head, tail);
     auto name = std::string_view{head, std::size_t(tail - head)};
 
 
@@ -1314,9 +1295,7 @@ inline std::unique_ptr<char[]> read_file(char const* file_name) {
 }
 
 
-
 } // detail
-
 
 
 inline result parse_string(char const* source) {
@@ -1342,7 +1321,6 @@ inline result parse(char const* file_name) {
 inline result parse(std::string const& file_name) {
   return parse(file_name.data());
 }
-
 
 
 }
