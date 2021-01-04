@@ -213,40 +213,39 @@ inline value const value::none;
 
 
 template<> std::optional<bool> value::to() const {
-
     using detail::ascii::lower_case;
     std::optional<bool> result;
 
     std::string_view const* p = std::get_if<std::string_view>(&holder_);
     if(p == nullptr)
-      return result;
+        return result;
     bool boolean;
     char const* cc = p->data();
 
     switch(p->size()) {
-      case 2:
+    case 2:
         boolean = lower_case(cc[0]) == 'o'
                && lower_case(cc[1]) == 'n';
         return boolean ? (result = true) : result;
-      case 3:
+    case 3:
         boolean = lower_case(cc[0]) == 'o'
                && lower_case(cc[1]) == 'f'
                && lower_case(cc[2]) == 'f';
         return boolean ? (result = false) : result;
-      case 4:
+    case 4:
         boolean = lower_case(cc[0]) == 't'
                && lower_case(cc[1]) == 'r'
                && lower_case(cc[2]) == 'u'
                && lower_case(cc[3]) == 'e';
         return boolean ? (result = true) : result;
-      case 5:
+    case 5:
         boolean = lower_case(cc[0]) == 'f'
                && lower_case(cc[1]) == 'a'
                && lower_case(cc[2]) == 'l'
                && lower_case(cc[3]) == 's'
                && lower_case(cc[4]) == 'e';
         return boolean ? (result = false) : result;
-      default:
+    default:
         return result;
     }
 
@@ -274,31 +273,30 @@ template<> std::optional<unsigned long long> value::to() const {
 
 
 template<> std::optional<double> value::to() const {
-
     std::optional<double> result;
 
     std::string_view const* p = std::get_if<std::string_view>(&holder_);
     if(p == nullptr)
-      return result;
+        return result;
 
     char const* head = p->data();
     char const* tail = p->data() + p->size();
 
     if(*head == '+')
-      ++head;
+        ++head;
 
-    #ifdef _MSC_VER
+#ifdef _MSC_VER
     double number;
     auto const parsed = std::from_chars(head, tail, number);
 
     if(parsed.ec == std::errc::invalid_argument)
-      return result;
-    #else
+        return result;
+#else
     char* endptr;
     double number = std::strtod(head, &endptr);
     if(endptr != tail)
-      return result;
-    #endif
+        return result;
+#endif
 
     return result = number;
 }
@@ -309,7 +307,7 @@ template<> std::optional<std::string> value::to() const {
 
     std::string_view const* p = std::get_if<std::string_view>(&holder_);
     if(p == nullptr)
-      return result;
+        return result;
 
     return result = std::string{p->begin(), p->end()};
 }
@@ -320,7 +318,7 @@ template<> std::optional<std::string_view> value::to() const {
 
     std::string_view const* p = std::get_if<std::string_view>(&holder_);
     if(p == nullptr)
-      return result;
+        return result;
 
     return result = *p;
 }
@@ -332,37 +330,37 @@ template<> std::optional<std::vector<bool>> value::to() const {
 
 
 template<> std::optional<std::vector<int>> value::to() const {
-return try_parse_array<int>();
+    return try_parse_array<int>();
 }
 
 
 template<> std::optional<std::vector<unsigned>> value::to() const {
-return try_parse_array<unsigned>();
+    return try_parse_array<unsigned>();
 }
 
 
 template<> std::optional<std::vector<long long>> value::to() const {
-return try_parse_array<long long>();
+    return try_parse_array<long long>();
 }
 
 
 template<> std::optional<std::vector<unsigned long long>> value::to() const {
-return try_parse_array<unsigned long long>();
+    return try_parse_array<unsigned long long>();
 }
 
 
 template<> std::optional<std::vector<double>> value::to() const {
-return try_parse_array<double>();
+    return try_parse_array<double>();
 }
 
 
 template<> std::optional<std::vector<std::string>> value::to() const {
-return try_parse_array<std::string>();
+    return try_parse_array<std::string>();
 }
 
 
 template<> std::optional<std::vector<std::string_view>> value::to() const {
-return try_parse_array<std::string_view>();
+    return try_parse_array<std::string_view>();
 }
 
 
