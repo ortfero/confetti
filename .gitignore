@@ -32,4 +32,6 @@
 *.app
 build/
 *.user
-tests/.vs/
+.vs/
+x64/
+
