@@ -12,7 +12,27 @@ C++17 one-header library to parse ini files with some toml extensions.
 * No dependencies
 
 
-## Example
+## Snippets
+
+### Open config
+
+```cpp
+#include <cstdio>
+#include <confetti/confetti.hpp>
+
+int main() {
+  using namespace std;
+  using namespace std::string_view_literals;
+  
+  confetti::result const parsed = confetti::parse("example.ini");
+  if(!parsed) {
+    std::printf("Error at line %d: %s" << parsed.source.line_no << ": " << parsed.message << endl;
+    return -1;
+  }
+
+  return 0;
+}
+```
 
 ```ini
 [default]
