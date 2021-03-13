@@ -25,8 +25,8 @@ TEST_CASE("parse default section") {
   REQUIRE(r.config.contains("default"));
 
   r = confetti::parse_string("[default");
-  REQUIRE_EQ(r.code, confetti::result::invalid_section_name);
-  REQUIRE_EQ(r.source.line_no, 1);
+  REQUIRE_EQ(r.error.code(), confetti::make_error_code(confetti::error::invalid_section_name));
+  REQUIRE_EQ(r.line_no, 1);
 }
 
 
@@ -73,19 +73,19 @@ TEST_CASE("parse inside section") {
 TEST_CASE("parse invalid configs") {
   confetti::result r = confetti::parse_string("key = 'foo' bar");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::unexpected_chars_after_value);
+  REQUIRE_EQ(r.error.code(), confetti::make_error_code(confetti::error::unexpected_chars_after_value));
 
   r = confetti::parse_string("k1 = v1 k2 = v2");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::unexpected_equal_sign);
+  REQUIRE_EQ(r.error.code(), confetti::make_error_code(confetti::error::unexpected_equal_sign));
 
   r = confetti::parse_string("k1 = v1\n k1 = v2");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::duplicated_item);
+  REQUIRE_EQ(r.error.code(), confetti::make_error_code(confetti::error::duplicated_item));
 
   r = confetti::parse_string("k1 = v1\n k2 = ");
   REQUIRE(!r);
-  REQUIRE(r.code == confetti::result::expected_value);
+  REQUIRE_EQ(r.error.code(), confetti::make_error_code(confetti::error::expected_value));
 
 }
 
@@ -98,7 +98,7 @@ TEST_CASE("parse boolean") {
                          "k5 = True\n" "k6 = False\n"
                          "k7 = ON\n" "k8 = OFF\n");
   REQUIRE(!!r);
-  auto const& section = r.config.defaults();
+  auto const& section = r.config["default"];
   auto const k1 = section["k1"] | false;
   REQUIRE(k1);
   auto const k2 = section["k2"] | true;
@@ -124,7 +124,7 @@ TEST_CASE("parse integer") {
                          "k1 = -2147483648\n" "k2 = +2147483647\n"
                          "k3 = 0xFCED\n");
   REQUIRE(r);
-  auto const& section = r.config.defaults();
+  auto const& section = r.config["default"];
   REQUIRE_EQ(section["k1"] | -1, -2147483647 - 1);
   REQUIRE_EQ(section["k2"] | -1, 2147483647);
   REQUIRE_EQ(section["k3"] | -1, -1);
@@ -137,7 +137,7 @@ TEST_CASE("parse unsigned") {
                          "k1 = 4294967295\n" "k2 = 0xFCED\n"
                          "k3 = 0x");
   REQUIRE(r);
-  auto const& section = r.config.defaults();
+  auto const& section = r.config["default"];
   REQUIRE_EQ(section["k1"] | 1u, 4294967295);
   REQUIRE_EQ(section["k2"] | 1u, 0xFCED);
   REQUIRE_EQ(section["k3"] | 1u, 1u);
@@ -150,7 +150,7 @@ TEST_CASE("parse long integer") {
                          "k1 = -9223372036854775808\n"
                          "k2 = 9223372036854775807\n");
   REQUIRE(r);
-  auto const& section = r.config.defaults();
+  auto const& section = r.config["defaults"];
   REQUIRE_EQ(section["k1"] | 0ll, -9223372036854775807 - 1);
   REQUIRE_EQ(section["k2"] | 0ll, 9223372036854775807);
 }
@@ -161,7 +161,7 @@ TEST_CASE("parse double") {
   confetti::result r = confetti::parse_string(
                          "k1 = -3.14E+2\n");
   REQUIRE(r);
-  auto const& section = r.config.defaults();
+  auto const& section = r.config["default"];
   REQUIRE_EQ(section["k1"] | -1., -314.);
 }
 
@@ -174,7 +174,7 @@ TEST_CASE("parse string") {
                          "k3 = \"'foo'\"\n" "k4 = '\"bar\"'\n"
                          "k5 = foo' bar'\n");
   REQUIRE(r);
-  auto const& section = r.config.defaults();
+  auto const& section = r.config["default"];
   REQUIRE_EQ(section["k1"] | "foo", "");
   REQUIRE_EQ(section["k2"] | "bar", "");
   REQUIRE_EQ(section["k3"] | "", "'foo'");
@@ -192,7 +192,7 @@ TEST_CASE("parse string view") {
                          "k1 = \"\"\n" "k2 = ''\n"
                          "k3 = \"'foo'\"\n" "k4 = '\"bar\"'\n");
   REQUIRE(r);
-  auto const& section = r.config.defaults();
+  auto const& section = r.config["default"];
   REQUIRE_EQ(section["k1"] | "foo"sv, "");
   REQUIRE_EQ(section["k2"] | "bar"sv, "");
   REQUIRE_EQ(section["k3"] | ""sv, "'foo'");
