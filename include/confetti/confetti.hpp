@@ -510,35 +510,6 @@ T operator|(value const& v, T const& bydefault)
     return *maybe;
 }
 
-/*struct array: std::vector<value> {
-
-  using base = std::vector<value>;
-  using size_type = value::size_type;
-
-  static array const& none() { static array x; return x; }
-
-  array() = default;
-  array(array const&) = delete;
-  array& operator = (array const&) = delete;
-  array(array&&) = default;
-  array& operator = (array&&) = default;
-
-  value const& operator [](size_type i) const noexcept {
-    if(i >= base::size())
-      return value::none;
-    return base::operator[](i);
-  }
-
-
-};*/
-// array
-
-/*inline array* value::to_array() noexcept {
-  array_ptr const* p = std::get_if<array_ptr>(&holder_);
-  if(p == nullptr)
-    return nullptr;
-  return p->get();
-}*/
 
 template <typename T>
 std::optional<std::vector<T>> value::try_parse_array() const
@@ -563,136 +534,10 @@ std::optional<std::vector<T>> value::try_parse_array() const
     return result = std::move(array);
 }
 
-/*struct table {
-
-  using size_type = size_t;
-
-  static table const& none() { static table x; return x; }
-
-  table() = default;
-  table(table const&) = delete;
-  table& operator = (table const&) = delete;
-  table(table&&) = default;
-  table& operator = (table&&) = default;
-  size_type size() const noexcept { return map_.size(); }
-  bool empty() const noexcept { return map_.empty(); }
-
-
-  template<std::size_t N>
-  value const& operator [] (char const (&name)[N]) const noexcept {
-    return operator [](std::string_view{name, N - 1});
-  }
-
-
-  value const& operator [] (std::string_view const& name) const noexcept {
-    auto const found = map_.find(name);
-    if(found == map_.end())
-      return value::none;
-    return found->second;
-  }
-
-
-  void put(std::string_view const& name, value value) {
-    map_[name] = std::move(value);
-  }
-
-
-  array* find_array(std::string_view const& name) noexcept {
-    auto const found = map_.find(name);
-    if(found == map_.end()) {
-      array_ptr new_array = std::make_unique<array>();
-      array* p = new_array.get();
-      map_[name] = std::move(new_array);
-      return p;
-    }
-    return found->second.to_array();
-  }
-
-
-  template<std::size_t N>
-  bool contains(char const (&name)[N]) const noexcept {
-    return contains(std::string_view{name, N - 1});
-  }
-
-
-  bool contains(std::string_view const& name) const noexcept {
-    return map_.find(name) != map_.end();
-  }
-
-
-private:
-
-  using map_type = std::unordered_map<std::string_view, value>;
-
-  map_type map_;
-
-};*/
-// table
 
 namespace detail {
     class parser;
 }
-
-/*struct config {
-
-  friend class detail::parser;
-
-  config() = default;
-  config(config const&) = delete;
-  config& operator = (config const&) = delete;  
-  config(config&& other) = default;
-  config& operator = (config&&) = default;
-
-  value const& defaults() const noexcept {
-    return defaults_;
-  }
-
-  template<std::size_t N>
-  bool contains(char const (&name)[N]) const noexcept {
-    if (N == 8 && strcmp(name, "default") == 0)
-      return true;
-    return contains(std::string_view{name, N - 1});
-  }
-
-  template<std::size_t N>
-  table const& operator [] (char const (&name)[N]) const noexcept {
-    if (N == 8 && strcmp(name, "default") == 0)
-      return defaults_;
-    std::string_view key{name, N - 1};
-    auto const found = sections_.find(key);
-    if(found == sections_.end())
-      return table::none();
-    return *found->second;
-  }
-
-
-private:
-
-  using sections_type = std::unordered_map<std::string_view, table_ptr>;
-
-  sections_type sections_;
-  std::unique_ptr<char[]> source_;
-  value defaults_;
-
-  void source(std::unique_ptr<char[]> source) {
-    source_ = std::move(source);
-  }
-
-  void put(std::string_view const& name, table_ptr ptr) {
-    sections_[name] = std::move(ptr);
-  }
-
-  bool contains(std::string_view const& name) const noexcept {
-    return sections_.find(name) != sections_.end();
-  }
-
-  table* default_section() noexcept {
-    return &defaults_;
-  }
-
-
-};*/
-// config
 
 enum struct error {
 
@@ -790,16 +635,6 @@ namespace confetti {
   }
 
 
-/*struct source_line {
-
-  std::string_view text;
-  unsigned line_no{0};
-  unsigned column_no{0};
-
-};*/ // source_line
-
-
-
 struct result {
 
 
@@ -807,12 +642,6 @@ struct result {
   std::system_error error;
   unsigned line_no{ 0 };
   value config;
-
-
-  /*enum code code{ok};
-  char const* message{"Ok"};
-  struct config config;
-  source_line source;*/
 
   result() = default;
   result(result const&) = delete;
@@ -831,7 +660,7 @@ struct result {
       , error { make_error_code(error::ok) }
       , config { value::make_table() }
   {
-      config.insert("defaults", value::make_table());
+      config.insert("default", value::make_table());
   }
 
   template<typename Stream> friend
@@ -870,7 +699,7 @@ public:
     if (!r.source)
         return r;
 
-    value* current_section = r.config.find("defaults");
+    value* current_section = r.config.find("default");
     if (current_section == nullptr || !current_section->is_table())
         return r;
 
@@ -938,7 +767,6 @@ private:
   }
 
 
-
   static bool is_eol(char c) {
     switch(c) {
       case '\r': case '\n': case '\0':
@@ -947,7 +775,6 @@ private:
         return false;
     }
   }
-
 
 
   static bool is_space(char c) {
@@ -960,7 +787,6 @@ private:
   }
 
 
-
   static bool is_comment_starts(char c) {
     switch(c) {
       case '#': case ';':
@@ -969,7 +795,6 @@ private:
         return false;
     }
   }
-
 
 
   static bool is_letter(char c) {
@@ -1018,7 +843,6 @@ private:
   }
 
 
-
   void skip_spaces_and_lines(result& r) {
     for(;;)
       switch(*cursor_) {
@@ -1032,7 +856,6 @@ private:
   }
 
 
-
   void skip_spaces(result&) {
     for(;;)
       switch(*cursor_) {
@@ -1042,7 +865,6 @@ private:
           return;
       }
   }
-
 
 
   void skip_comment(result& r) {
@@ -1095,19 +917,9 @@ private:
   }
 
 
-
   void get_current_line(result& r) {
       ++r.line_no;
   }
-
-
-
-  /*source_line get_current_position() const {
-    source_line line{line_};
-    line.column_no = unsigned(cursor_ - line.text.data()) + 1;
-    return line;
-  }*/
-
 
 
   bool parse_table_array_item(result& r, value& section) {
@@ -1147,7 +959,6 @@ private:
     }
 
     value new_table = value::make_table();
-    error rc;
 
     bool end_of_table = false;
     while(!end_of_table) {
