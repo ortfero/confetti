@@ -18,12 +18,6 @@
 
 namespace confetti {
 
-// struct array;
-// using array_ptr = std::unique_ptr<array>;
-
-// struct table;
-// using table_ptr = std::unique_ptr<table>;
-
 namespace detail::ascii {
 
 inline char lower_case(char c) {
@@ -124,8 +118,6 @@ public:
     array const &array = *p->get();
     return array[i];
   }
-
-  // array* to_array() noexcept;
 
   template <std::size_t N>
   value const &operator[](char const (&name)[N]) const noexcept {
@@ -627,26 +619,21 @@ public:
       case '[':
 
         if (cursor_[1] == '[') {
-          // if (parse_table_array_item(r, *current_section) != error::ok)
           if (!parse_table_array_item(r, *current_section))
             return std::move(r);
         } else {
           current_section = parse_section_name(r);
           if (!current_section)
             return std::move(r);
-          // if(!current_section)
-          // return result{error::invalid_section_name, line_no_};
         }
         continue;
       case '\0':
         return std::move(r);
       default:
-        // if((rc = parse_key_value(*current_section)) != error::ok)
         if (!parse_key_value(r, *current_section))
           return std::move(r);
         if (!skip_line(r))
           return std::move(r);
-        // return result { error::unexpected_chars_after_value, line_no_ };
         continue;
       }
   }
