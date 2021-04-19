@@ -620,20 +620,20 @@ public:
 
         if (cursor_[1] == '[') {
           if (!parse_table_array_item(r, *current_section))
-            return std::move(r);
+            return r;
         } else {
           current_section = parse_section_name(r);
           if (!current_section)
-            return std::move(r);
+            return r;
         }
         continue;
       case '\0':
-        return std::move(r);
+        return r;
       default:
         if (!parse_key_value(r, *current_section))
-          return std::move(r);
+          return r;
         if (!skip_line(r))
-          return std::move(r);
+          return r;
         continue;
       }
   }
