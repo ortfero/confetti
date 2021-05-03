@@ -586,6 +586,7 @@ private:
 				return token::unclosed_string;
 			case Q:
 				tail_ = cursor_;
+				++cursor_;
 				return token::text;				
 			default:
 				++cursor_;
