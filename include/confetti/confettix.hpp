@@ -249,39 +249,39 @@ private:
 	value(table_ptr p) noexcept: holder_{std::move(p)} { }	
 
 	template<typename T> std::optional<T> parse_unsigned() const noexcept {
-		std::string_view const *p = std::get_if<std::string_view>(&holder_);
-		if (p == nullptr)
-			return std::nullopt;
+			std::string_view const *p = std::get_if<std::string_view>(&holder_);
+			if (p == nullptr)
+					return std::nullopt;
 
-		char const *head = p->data();
-		char const *tail = p->data() + p->size();
-		int radix = 10;
+			char const *head = p->data();
+			char const *tail = p->data() + p->size();
+			int radix = 10;
 			
 	    switch (*head) {
 	    case '+':
-	    	++head;
-	    	break;
+	    		++head;
+	    		break;
 	    case '-':
-	      return std::nullopt;
+					return std::nullopt;
 	    case '0':
-	      if (head[1] != 'x')
-	        break;
-	      if (tail - head < 3)
-	        return std::nullopt;
-	      head += 2;
-	      radix = 16;
-	      break;
+					if (head[1] != 'x')
+							break;
+					if (tail - head < 3)
+							return std::nullopt;
+					head += 2;
+					radix = 16;
+					break;
 	    default:
-	      break;
+					break;
 	    }
 
-		T number;
-		auto const parsed = std::from_chars(head, tail, number, radix);
+			T number;
+			auto const parsed = std::from_chars(head, tail, number, radix);
 				
-		if (parsed.ec == std::errc::invalid_argument || parsed.ptr != tail)
-			return std::nullopt;
+			if (parsed.ec == std::errc::invalid_argument || parsed.ptr != tail)
+					return std::nullopt;
 				
-		return {number};		
+			return {number};		
 	}
 
 	template<typename T> std::optional<T> parse_signed() const noexcept {
@@ -334,6 +334,7 @@ template<> std::optional<bool> value::to() const {
 		         lower_case(cc[4]) == 'e';
 		if(!parsed)
 			return std::nullopt;
+
 	default:
 		return std::nullopt;
 	}
@@ -582,6 +583,8 @@ private:
 		for(;;)
 			switch(*cursor_) {
 			case ' ': case '\t': case '\r': case '\n': case '\0':
+			case '[': case ']': case '{': case '}': case '=':
+			case ',': case '"': case '\'': case '#': case ';':
 				tail_ = cursor_;
 				return token::text;
 			default:
@@ -661,7 +664,9 @@ private:
 			return failed(error::duplicated_section);
 		if(scaner_.next() != token::closed_square_brace)
 			return failed(error::invalid_section_name);
-		value* section = result_.config.insert(name, value::make_table());
+		value* section = name == "default" ?
+				result_.config.
+				result_.config.insert(name, value::make_table());
 		if(section == nullptr)
 			return failed(error::not_enough_memory);
 		section_ = section;
