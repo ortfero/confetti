@@ -334,7 +334,7 @@ template<> std::optional<bool> value::to() const {
 		         lower_case(cc[4]) == 'e';
 		if(!parsed)
 			return std::nullopt;
-
+    return { false };
 	default:
 		return std::nullopt;
 	}
