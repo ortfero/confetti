@@ -504,8 +504,9 @@ public:
 			case '#': case ';':
 				skip_comment(); continue;
 			default:
-				break;
-			}		
+				goto skipped_whitespaces;
+			}
+skipped_whitespaces:
 		switch(*cursor_) {
 		case '[':
 			++cursor_;
