@@ -761,7 +761,7 @@ private:
 			case token::comma:
 				tk = scaner_.next();
 				continue;
-			case token::closed_square_brace:
+			case token::closed_figure_brace:
 				return true;
 			default:
 				return failed(error::expected_comma_or_closed_figure_brace);

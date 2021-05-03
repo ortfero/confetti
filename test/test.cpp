@@ -100,10 +100,10 @@ TEST_CASE("parse boolean") {
     REQUIRE(k1);
     auto const k2 = section["k2"] | true;
     REQUIRE_FALSE(k2);
-   auto const k5 = section["k5"] | false;
-    REQUIRE(k5);
-    auto const k6 = section["k6"] | true;
-    REQUIRE_FALSE(k6);
+   auto const k3 = section["k3"] | false;
+    REQUIRE(k3);
+    auto const k4 = section["k4"] | true;
+    REQUIRE_FALSE(k4);
 }
 
 
@@ -138,7 +138,7 @@ TEST_CASE("parse long integer") {
         "k1 = -9223372036854775808\n"
         "k2 = 9223372036854775807\n");
     REQUIRE(r);
-    auto const& section = r.config["defaults"];
+    auto const& section = r.config["default"];
     REQUIRE_EQ(section["k1"] | 0ll, -9223372036854775807 - 1);
     REQUIRE_EQ(section["k2"] | 0ll, 9223372036854775807);
 }
@@ -158,15 +158,13 @@ TEST_CASE("parse string") {
         "k1 = \"\"\n"
         "k2 = ''\n"
         "k3 = \"'foo'\"\n"
-        "k4 = '\"bar\"'\n"
-        "k5 = foo' bar'\n");
+        "k4 = '\"bar\"'\n");
     REQUIRE(r);
     auto const& section = r.config["default"];
     REQUIRE_EQ(section["k1"] | "foo", "");
     REQUIRE_EQ(section["k2"] | "bar", "");
     REQUIRE_EQ(section["k3"] | "", "'foo'");
     REQUIRE_EQ(section["k4"] | "", "\"bar\"");
-    REQUIRE_EQ(section["k5"] | "", "foo' bar'");
 }
 
 
@@ -210,7 +208,7 @@ TEST_CASE("parse array") {
 
 TEST_CASE("parse inline table") {
     confetti::result r =
-        confetti::parse_text("k1 = {\n x = foo bar, y = [\n1,\n2]\n}\n");
+        confetti::parse_text("k1 = {\n x = 'foo bar', y = [\n1,\n2]\n}\n");
 
     REQUIRE(r);
     auto const& table = r.config["default"]["k1"];
