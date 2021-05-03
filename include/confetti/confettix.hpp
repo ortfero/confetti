@@ -218,6 +218,22 @@ public:
 	    return &emplaced.first->second;
 	}
 
+	value* find(std::string_view const& name) noexcept {
+      table_ptr* p = std::get_if<table_ptr>(&holder_);
+      if (p == nullptr)
+          return nullptr;
+      table& table = *p->get();
+      auto const found = table.find(name);
+      if (found == table.end())
+          return nullptr;
+      return &found->second;
+
+	}
+
+	template <std::size_t N> value* find(char const (&name)[N]) noexcept {
+			return find(std::string_view{name, N - 1});
+  }
+
 	bool contains(std::string_view const &name) const noexcept {
 	    table_ptr const *p = std::get_if<table_ptr>(&holder_);
 	   	if (p == nullptr)
@@ -657,19 +673,20 @@ private:
 
 	bool parse_section_name() {
 		if(scaner_.next() != token::text)
-			return failed(error::invalid_section_name);
+				return failed(error::invalid_section_name);
 		ascii::lower_case(scaner_.head(), scaner_.tail());
 		auto const name = scaner_.text();
-		if(name != "default" && result_.config.contains(name))
-			return failed(error::duplicated_section);
-		if(scaner_.next() != token::closed_square_brace)
-			return failed(error::invalid_section_name);
-		value* section = name == "default" ?
-				result_.config.
-				result_.config.insert(name, value::make_table());
-		if(section == nullptr)
+    if (scaner_.next() != token::closed_square_brace)
+				return failed(error::invalid_section_name);
+    if (name == "default") {
+        section_ = result_.config.find("default");
+		} else {
+        if(result_.config.contains(name))
+						return failed(error::duplicated_section);
+        section_ = result_.config.insert(name, value::make_table());
+		}
+		if(section_ == nullptr)
 			return failed(error::not_enough_memory);
-		section_ = section;
 		return true;
 	}
 
