@@ -61,7 +61,7 @@ int main() {
 
 ```cpp
 #include <vector>
-#include <confetti/confetti.hpp
+#include <confetti/confetti.hpp>
 
 int main() {
     confetti::result const parsed = confetti::parse_text(
@@ -85,7 +85,7 @@ int main() {
 
 ```cpp
 #include <vector>
-#include <confetti/confetti.hpp
+#include <confetti/confetti.hpp>
 
 int main() {
     confetti::result const parsed = confetti::parse_text(
