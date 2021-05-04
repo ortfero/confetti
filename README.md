@@ -21,131 +21,99 @@ C++17 one-header library to parse ini files with some toml extensions.
 #include <confetti/confetti.hpp>
 
 int main() {
-  using namespace std;
-  using namespace std::string_view_literals;
-  
-  confetti::result const parsed = confetti::parse("example.ini");
-  if(!parsed) {
-    std::printf("Error at line %d: %s" << parsed.source.line_no << ": " << parsed.message << endl;
-    return -1;
-  }
+    confetti::result const parsed = confetti::parse("example.ini");
+    if(!parsed) {
+        std::printf("Error at line %d: %s\n",
+                    parsed.line_no,
+                    parsed.error_code.message().data());
+        return -1;
+    }
 
-  return 0;
+    return 0;
 }
 ```
 
-```ini
-[default]
-; line comment
-# another line comment
-
-
-[strings]
-string = text 
-stringWithSpaces = text with spaces
-quotedString = 'quoted text'
-doubleQuotedString = "double quoted text"
-
-
-[numbers]
-integer = 0
-positive = +1
-negative = -9223372036854775808
-hex = 0xDEAD
-floating = 3.14e0
-
-
-[booleans] # case insensitive
-true = true
-false = False 
-alternativeTrue = on
-alternativeFalse = OFF
-
-
-[arrays]
-array = [feature1, feature2,
-         feature3]
-         
-matrix = [[1, 2],
-          [3, 4]]
-          
-          
-[tables]
-
-inlineTable = {property1 = value1,
-               property2 = value2}
-               
-features = {feature1:on, feature2:off}
-
-data = [{name = Anubis, gender = male},
-        {name = Isis, gender = female}]
-
-[[sameData]]
-name = Anubis
-gender = male
-
-[[sameData]]
-name = Isis
-gender = female
-
-```
-
-And how to read some of this
+### Read basic properties
 
 ```cpp
-#include <iostream>
-#include <string>
-#include <string_view>
-#include <vector>
-
 #include <confetti/confetti.hpp>
 
+int main() {
+    confetti::result const parsed = confetti::parse_text(
+        "a = -1\n"
+        "b = 3.14\n"
+        "c = value\n"
+        "d = 'string value'\n"
+        "e = false\n");
+    if(!parsed)
+        return -1;
+    confetti::value const& section = parsed.config["default"];
+    int const a = section["a"] | 0;
+    double const b = section["b"] | 0.0;
+    std::string const c = section["c"] | "";
+    std::string const d = section["d"] | "";
+    bool const e = section["e"] | false;
+    return 0;
+}
+```
+
+### Read arrays
+
+```cpp
+#include <vector>
+#include <confetti/confetti.hpp
 
 int main() {
-  using namespace std;
-  using namespace std::string_view_literals;
-  
-  confetti::result const parsed = confetti::parse("example.ini");
-  if(!parsed) {
-    cout << "Error at line " << parsed.source.line_no << ": " << parsed.message << endl;
-    return -1;
-  }
-  
-  std::string const as_string = parsed.config["strings"]["string"] | "";
-  std::string_view as_view = parsed.config["strings"]["stringwithspaces"] | ""sv;
-  
-  if(!parsed.config.contains("Numbers"))
-    cout << "All keys are downcased" << endl;
-  
-  confetti::table const&  numbers = parsed.config["numbers"]; // Will be empty if not exists
-  auto const positive = numbers["positive"] | 0;
-  optional<int> const no_hex = numbers["hex"].to<int>();
-  if(!no_hex)
-    cout << "hex is unsigned" << endl;
-  auto const sure_hex = numbers["hex"] | 0u;
-    
-  auto const& arrays = parsed.config["arrays"];
-  // Parse array as vector of strings
-  auto const& features_list = arrays["array"] | vector<string>{};
-  auto const& matrix = arrays["matrix"];
-  bool const is_diagonal =
-    (matrix[0][0] | 0) + (matrix[1][1] | 0)
-      == (matrix[0][1] | 0) + (matrix[1][0] | 0);
-  
-  auto const& tables = parsed.config["tables"];
-  value const& features = tables["features"];
-  if(tables["features"]["feature1"] | false)
-    cout << "Feature 1 is activated" << endl;
-    
-  auto const& data = tables["data"];
-  auto const& same_data = tables["sameData"];
-  
-  bool const truly_the_same =
-    (data[0]["name"] | "") == (same_data[0]["name"] | "");
-  if(truly_the_same)
-    cout << "Array tables are the same" << endl;
-  
-  return 0;
+    confetti::result const parsed = confetti::parse_text(
+        "[section]\n"
+        "data = [1, 2, 3, 4]\n"
+    );
+    if(!parsed)
+        return -1;
+    confetti::value const& section = parsed.config["section"];
+    std::string const data = section["data"];
+    if(!data.is_array())
+        return -1;
+    std::vector<int> vector;
+    for(std::size_t i = 0; i != data.size(); ++i)
+        vector.push_back(data[i] | 0);
+    return 0;
 }
+```
 
+### Read tables
+
+```cpp
+#include <vector>
+#include <confetti/confetti.hpp
+
+int main() {
+    confetti::result const parsed = confetti::parse_text(
+        "[gods]\n"
+        "anubis = {name = 'Anubis', sex = male}\n"
+    );
+    if(!parsed)
+        return -1;
+    confetti::value const& gods = parsed.config["gods"];
+    confetti::value const& anubis = gods["anubis"];
+    if(!anubis.is_table())
+        return -1;
+    std::string const name = anubis["name"] | "";
+    std::string const sex = anubis["sex"] | "";
+    return 0;
+}
+```
+
+### Check section contains property
+
+```cpp
+#include <confetti/confetti.hpp>
+
+int main() {
+    confetti::result const parsed = confetti::parse_text("");
+    if(!parsed)
+        return -1;
+    bool const key_exists = parsed.config["default"].contains("key");
+    return 0;
+}
 ```
