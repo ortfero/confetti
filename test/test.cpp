@@ -203,6 +203,12 @@ TEST_CASE("parse array") {
     REQUIRE_EQ(k2.size(), 2);
     REQUIRE_EQ(k2[0] | 0, 1);
     REQUIRE_EQ(k2[1] | 0, 2);
+    auto const k1_vector = k1 | std::vector<int>{};
+    REQUIRE(k1_vector.empty());
+    auto const k2_vector = k2 | std::vector<int>{};
+    REQUIRE_EQ(k2_vector.size(), 2);
+    REQUIRE_EQ(k2_vector[0], 1);
+    REQUIRE_EQ(k2_vector[1], 2);
 }
 
 

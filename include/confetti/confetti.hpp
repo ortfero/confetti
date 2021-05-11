@@ -326,6 +326,22 @@ private:
 			
 		return {number};	
 	}
+	
+	template<typename T> std::optional<std::vector<T>> parse_array() const {
+        array_ptr const* p = std::get_if<array_ptr>(&holder_);
+        if (p == nullptr)
+            return std::nullopt;
+        array const &data = *p->get();
+        std::vector<T> result;
+        result.reserve(data.size());
+        for(auto const& each: data) {
+            std::optional<T> const item = each.to<T>();
+            if(!item)
+                return std::nullopt;
+            result.emplace_back(*item);
+        }
+        return {result};
+    }
 }; // value
 
 
@@ -421,11 +437,51 @@ template<> std::optional<std::string_view> value::to() const {
 
 
 template<> std::optional<std::string> value::to() const {
-  std::string_view const *p = std::get_if<std::string_view>(&holder_);
-  if (p == nullptr)
-    return std::nullopt;
+    std::string_view const *p = std::get_if<std::string_view>(&holder_);
+    if (p == nullptr)
+        return std::nullopt;
 
-  return {std::string{p->begin(), p->end()}};
+    return {std::string{p->begin(), p->end()}};
+}
+
+
+template<> std::optional<std::vector<bool>> value::to() const {
+    return parse_array<bool>();
+}
+
+
+template<> std::optional<std::vector<int>> value::to() const {
+    return parse_array<int>();
+}
+
+
+template<> std::optional<std::vector<unsigned>> value::to() const {
+    return parse_array<unsigned>();
+}
+
+
+template<> std::optional<std::vector<long long>> value::to() const {
+    return parse_array<long long>();
+}
+
+
+template<> std::optional<std::vector<unsigned long long>> value::to() const {
+    return parse_array<unsigned long long>();
+}
+
+
+template<> std::optional<std::vector<double>> value::to() const {
+    return parse_array<double>();
+}
+
+
+template<> std::optional<std::vector<std::string_view>> value::to() const {
+    return parse_array<std::string_view>();
+}
+
+
+template<> std::optional<std::vector<std::string>> value::to() const {
+    return parse_array<std::string>();
 }
 
 
