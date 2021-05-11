@@ -144,6 +144,10 @@ public:
 	value &operator=(value const &) = delete;
 	value(value &&) noexcept = default;
 	value &operator=(value &&) noexcept = default;
+    
+    bool is_none() const noexcept {
+        return std::holds_alternative<std::monostate>(holder_);
+    }
 
 	bool is_single_value() const noexcept {
 		return std::holds_alternative<std::string_view>(holder_);
