@@ -40,17 +40,18 @@ TEST_CASE("parse outside sections") {
     REQUIRE_EQ(defaults.size(), 1);
 
     REQUIRE(defaults.contains("x"));
-    auto const maybe_foo = defaults["x"].to("");
-    REQUIRE(maybe_foo);
+    auto const& x = defaults["x"];
+    REQUIRE_TRUE(x.is_single());
+    auto const maybe_foo = x | "";
+    REQUIRE_TRUE(maybe_foo);
     REQUIRE_EQ(*maybe_foo, "foo");
-    auto const foo = defaults["x"] | "";
-    REQUIRE_EQ(foo, "foo");
-
+ 
     REQUIRE_FALSE(defaults.contains("y"));
-    auto const maybe_nothing = defaults["y"].to("");
-    REQUIRE_FALSE(maybe_nothing);
-    auto const bar = defaults["y"] | "bar";
-    REQUIRE_EQ(bar, "bar");
+    auto const& y = defaults["y"];
+    REQUIRE_TRUE(y.is_none());
+    auto const maybe_bar = y | "bar";
+    REQUIRE_TRUE(maybe_bar);
+    REQUIRE_EQ(*maybe_bar, "bar");
 }
 
 
@@ -64,8 +65,9 @@ TEST_CASE("parse inside section") {
 
     auto const& section = r.config["section"];
     REQUIRE(section.contains("key"));
-    auto const value = section["key"] | "";
-    REQUIRE_EQ(section["key"] | "", "value");
+    auto const maybe_value = section["key"] | "";
+    REQUIRE_TRUE(maybe_value);
+    REQUIRE_EQ(*maybe_value, "value");
 }
 
 
@@ -97,13 +99,17 @@ TEST_CASE("parse boolean") {
     REQUIRE(!!r);
     auto const& section = r.config["default"];
     auto const k1 = section["k1"] | false;
-    REQUIRE(k1);
+    REQUIRE_TRUE(k1);
+    REQUIRE_TRUE(*k1);
     auto const k2 = section["k2"] | true;
-    REQUIRE_FALSE(k2);
-   auto const k3 = section["k3"] | false;
-    REQUIRE(k3);
+    REQUIRE_TRUE(k2);
+    REQUIRE_FALSE(*k2);
+    auto const k3 = section["k3"] | false;
+    REQUIRE_TRUE(k3);
+    REQUIRE_TRUE(*k3);
     auto const k4 = section["k4"] | true;
-    REQUIRE_FALSE(k4);
+    REQUIRE_TRUE(k4);
+    REQUIRE_FALSE(*k4);
 }
 
 
@@ -114,9 +120,14 @@ TEST_CASE("parse integer") {
         "k3 = 0xFCED\n");
     REQUIRE(r);
     auto const& section = r.config["default"];
-    REQUIRE_EQ(section["k1"] | -1, -2147483647 - 1);
-    REQUIRE_EQ(section["k2"] | -1, 2147483647);
-    REQUIRE_EQ(section["k3"] | -1, -1);
+    auto const k1 = section["k1"] | -1;
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, -2147483647 - 1);
+    auto const k2 = section["k2"] | -1;
+    REQUIRE_TRUE(k2);
+    REQUIRE_EQ(*k2, 2147483647);
+    auto const k3 = section["k3"] | -1;
+    REQUIRE_FALSE(k3);
 }
 
 
@@ -127,9 +138,14 @@ TEST_CASE("parse unsigned") {
         "k3 = 0x");
     REQUIRE(r);
     auto const& section = r.config["default"];
-    REQUIRE_EQ(section["k1"] | 1u, 4294967295);
-    REQUIRE_EQ(section["k2"] | 1u, 0xFCED);
-    REQUIRE_EQ(section["k3"] | 1u, 1u);
+    auto const k1 = section["k1"] | 1u;
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, 4294967295);
+    auto const k2 = section["k2"] | 1u;
+    REQUIRE_TRUE(k2);
+    REQUIRE_EQ(*k2, 0xFCED);
+    auto const k3 = section["k3"] | 1u;
+    REQUIRE_FALSE(k3);
 }
 
 
@@ -139,8 +155,12 @@ TEST_CASE("parse long integer") {
         "k2 = 9223372036854775807\n");
     REQUIRE(r);
     auto const& section = r.config["default"];
-    REQUIRE_EQ(section["k1"] | 0ll, -9223372036854775807 - 1);
-    REQUIRE_EQ(section["k2"] | 0ll, 9223372036854775807);
+    auto const k1 = section["k1"] | 0ll;
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, -9223372036854775807 - 1);
+    auto const k1 = section["k2"] | 0ll;
+    REQUIRE_TRUE(k2);
+    REQUIRE_EQ(*k2, 9223372036854775807);
 }
 
 
@@ -148,7 +168,9 @@ TEST_CASE("parse double") {
     confetti::result r = confetti::parse_text("k1 = -3.14E+2\n");
     REQUIRE(r);
     auto const& section = r.config["default"];
-    REQUIRE_EQ(section["k1"] | -1., -314.);
+    auto const k1 = section["k1"] | -1.;
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, -314.);
 }
 
 
@@ -161,17 +183,23 @@ TEST_CASE("parse string") {
         "k4 = '\"bar\"'\n");
     REQUIRE(r);
     auto const& section = r.config["default"];
-    REQUIRE_EQ(section["k1"] | "foo", "");
-    REQUIRE_EQ(section["k2"] | "bar", "");
-    REQUIRE_EQ(section["k3"] | "", "'foo'");
-    REQUIRE_EQ(section["k4"] | "", "\"bar\"");
+    auto const k1 = section["k1"] | "foo";
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, "");
+    auto const k2 = section["k2"] | "bar";
+    REQUIRE_TRUE(k2);
+    REQUIRE_EQ(*k2, "");
+    auto const k3 = section["k3"] | "";
+    REQUIRE_TRUE(k3);
+    REQUIRE_EQ(*k3, "'foo'");
+    auto const k4 = section["k4"] | "";
+    REQUIRE_TRUE(k4);
+    REQUIRE_EQ(*k4, "\"bar\"");
 }
 
 
 
 TEST_CASE("parse string view") {
-    using namespace std::string_view_literals;
-
     confetti::result r = confetti::parse_text(
         "k1 = \"\"\n"
         "k2 = ''\n"
@@ -179,10 +207,18 @@ TEST_CASE("parse string view") {
         "k4 = '\"bar\"'\n");
     REQUIRE(r);
     auto const& section = r.config["default"];
-    REQUIRE_EQ(section["k1"] | "foo"sv, "");
-    REQUIRE_EQ(section["k2"] | "bar"sv, "");
-    REQUIRE_EQ(section["k3"] | ""sv, "'foo'");
-    REQUIRE_EQ(section["k4"] | ""sv, "\"bar\"");
+    auto const k1 = section["k1"] | std::string_view{"foo"};
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, "");
+    auto const k2 = section["k2"] | std::string_view{"bar"};
+    REQUIRE_TRUE(k2);
+    REQUIRE_EQ(*k2, "");
+    auto const k3 = section["k3"] | std::string_view{};
+    REQUIRE_TRUE(k3);
+    REQUIRE_EQ(*k3, "'foo'");
+    auto const k4 = section["k4"] | std::string_view{};
+    REQUIRE_TRUE(k4);
+    REQUIRE_EQ(*k4, "\"bar\"");
 }
 
 
@@ -194,21 +230,14 @@ TEST_CASE("parse array") {
     REQUIRE(r);
 
     auto const& section = r.config["default"];
-
     auto const& k1 = section["k1"];
     REQUIRE(k1.is_array());
     REQUIRE(k1.empty());
-    auto const& k2 = section["k2"];
-    REQUIRE(k2.is_array());
-    REQUIRE_EQ(k2.size(), 2);
-    REQUIRE_EQ(k2[0] | 0, 1);
-    REQUIRE_EQ(k2[1] | 0, 2);
-    auto const k1_vector = k1 | std::vector<int>{};
-    REQUIRE(k1_vector.empty());
-    auto const k2_vector = k2 | std::vector<int>{};
-    REQUIRE_EQ(k2_vector.size(), 2);
-    REQUIRE_EQ(k2_vector[0], 1);
-    REQUIRE_EQ(k2_vector[1], 2);
+    auto const& k2 = section["k2"] | std::vector<int>{};
+    REQUIRE_TRUE(k2);
+    REQUIRE_EQ(k2->size(), 2);
+    REQUIRE_EQ((*k2)[0], 1);
+    REQUIRE_EQ((*k2)[1], 2);
 }
 
 
@@ -218,11 +247,14 @@ TEST_CASE("parse inline table") {
 
     REQUIRE(r);
     auto const& table = r.config["default"]["k1"];
-    REQUIRE_EQ(table["x"] | "", "foo bar");
-    auto const& array = table["y"];
-    REQUIRE_EQ(array.size(), 2);
-    REQUIRE_EQ(array[0] | 0, 1);
-    REQUIRE_EQ(array[1] | 1, 2);
+    auto const x = table["x"] | "";
+    REQUIRE_TRUE(x);
+    REQUIRE_EQ(*x, "foo bar");
+    auto const y = table["y"] | std::vector<int>{};
+    REQUIRE_TRUE(y);
+    REQUIRE_EQ(y->size(), 2);
+    REQUIRE_EQ((*y)[0], 1);
+    REQUIRE_EQ((*y)[1], 2);
 }
 
 
@@ -232,24 +264,20 @@ TEST_CASE("parse inline array of tables") {
 
     REQUIRE(r);
     auto const& data = r.config["default"]["data"];
+    REQUIRE_TRUE(data.is_array());
     REQUIRE_EQ(data.size(), 2);
     auto const& table1 = data[0];
-    REQUIRE_EQ(table1["k"] | "", "foo");
-    REQUIRE_EQ(table1["v"] | "", "bar");
+    auto const k1 = table1["k"] | "";
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, "foo");
+    auto const v1 = table1["v"] | "";
+    REQUIRE_TRUE(v1);
+    REQUIRE_EQ(*v1, "bar");
     auto const& table2 = data[1];
-    REQUIRE_EQ(table2["k"] | "", "bar");
-    REQUIRE_EQ(table2["v"] | "", "foo");
-}
-
-
-TEST_CASE("parse matrix") {
-    confetti::result r = confetti::parse_text(
-        "matrix = [[1, 2],\n"
-        "          [3, 4]]\n");
-    REQUIRE(r);
-    auto const& matrix = r.config["default"]["matrix"];
-    auto const d1 = (matrix[0][0] | 0) + (matrix[1][1] | 0);
-    REQUIRE_EQ(d1, 5);
-    auto const d2 = (matrix[0][1] | 0) + (matrix[1][0] | 0);
-    REQUIRE_EQ(d2, 5);
+    auto const k2 = table2["k2"];
+    REQUIRE_TRUE(k1);
+    REQUIRE_EQ(*k1, "bar");
+    auto const v2 = table2["v2"];
+    REQUIRE_TRUE(v2);
+    REQUIRE_EQ(*v2, "foo");
 }

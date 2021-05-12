@@ -149,7 +149,7 @@ public:
         return std::holds_alternative<std::monostate>(holder_);
     }
 
-    bool is_single_value() const noexcept {
+    bool is_single() const noexcept {
         return std::holds_alternative<std::string_view>(holder_);
     }
 
@@ -253,7 +253,7 @@ public:
         return contains(std::string_view{name, N - 1});
     }
     
-    std::optional<bool> to(bool const& bydefault) const {
+    std::optional<bool> operator | (bool bydefault) const noexcept {
         using detail::ascii::lower_case;
         
         if(std::holds_alternative<std::monostate>(holder_))
@@ -284,31 +284,31 @@ public:
         }
     }
 
-    std::optional<int> to(int bydefault) const noexcept {
+    std::optional<int> operator | (int bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_signed<int>();	
     }
     
-    std::optional<unsigned> to(unsigned bydefault) const noexcept {
+    std::optional<unsigned> operator | (unsigned bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_unsigned<unsigned>();
     }
     
-    std::optional<long long> to(long long bydefault) const noexcept {
+    std::optional<long long> operator | (long long bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_signed<long long>();
     }
     
-    std::optional<unsigned long long> to(unsigned long long bydefault) const noexcept {
+    std::optional<unsigned long long> operator | (unsigned long long bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_unsigned<unsigned long long>();
     }
     
-    std::optional<double> to(double bydefault) const {
+    std::optional<double> operator | (double bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         
@@ -338,7 +338,7 @@ public:
         return {number};	
     }
 
-    std::optional<std::string_view> to(std::string_view const& bydefault) const noexcept {
+    std::optional<std::string_view> operator | (std::string_view const& bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         std::string_view const *p = std::get_if<std::string_view>(&holder_);
@@ -348,7 +348,7 @@ public:
         return {*p};
     }
     
-    std::optional<std::string> to(char const* bydefault) const {
+    std::optional<std::string> operator | (char const* bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::string{bydefault}};
         std::string_view const *p = std::get_if<std::string_view>(&holder_);
@@ -358,7 +358,7 @@ public:
         return {std::string{p->begin(), p->end()}};
     }
     
-    std::optional<std::string> to(std::string const& bydefault) const {
+    std::optional<std::string> operator | (std::string const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         std::string_view const *p = std::get_if<std::string_view>(&holder_);
@@ -368,67 +368,52 @@ public:
         return {std::string{p->begin(), p->end()}};
     }
 
-    std::optional<std::vector<bool>> to(std::vector<bool> const& bydefault) const {
+    std::optional<std::vector<bool>> operator | (std::vector<bool> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_array<bool>();
     }
 
-    std::optional<std::vector<int>> to(std::vector<int> const& bydefault) const {
+    std::optional<std::vector<int>> operator | (std::vector<int> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_array<int>();
     }
 
-    std::optional<std::vector<unsigned>> to(std::vector<unsigned> const& bydefault) const {
+    std::optional<std::vector<unsigned>> operator | (std::vector<unsigned> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_array<unsigned>();
     }
 
-    std::optional<std::vector<long long>> to(std::vector<long long> const& bydefault) const {
+    std::optional<std::vector<long long>> operator | (std::vector<long long> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<long long>();
     }
 
-    std::optional<std::vector<unsigned long long>> to(std::vector<unsigned long long> const& bydefault) const {
+    std::optional<std::vector<unsigned long long>> operator | (std::vector<unsigned long long> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<unsigned long long>();
     }
 
-    std::optional<std::vector<double>> to(std::vector<double> const& bydefault) const {
+    std::optional<std::vector<double>> operator | (std::vector<double> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<double>();
     }
 
-    std::optional<std::vector<std::string_view>> to(std::vector<std::string_view> const& bydefault) const {
+    std::optional<std::vector<std::string_view>> operator | (std::vector<std::string_view> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<std::string_view>();
     }
 
-    std::optional<std::vector<std::string>> to(std::vector<std::string> const& bydefault) const {
+    std::optional<std::vector<std::string>> operator | (std::vector<std::string> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_array<std::string>();
-    }
-
-    std::string operator | (char const* bydefault) const {
-        auto const parsed = to(bydefault);
-        if(!parsed)
-            return std::string{bydefault};
-        return *parsed;
-    }
-
-
-    template<typename T> T operator | (T const& bydefault) const {
-        auto const parsed = to(bydefault);
-        if(!parsed)
-            return bydefault;
-        return *parsed;
     }
 
 private:
