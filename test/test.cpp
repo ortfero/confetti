@@ -40,14 +40,14 @@ TEST_CASE("parse outside sections") {
     REQUIRE_EQ(defaults.size(), 1);
 
     REQUIRE(defaults.contains("x"));
-    auto const maybe_foo = defaults["x"].to<std::string>();
+    auto const maybe_foo = defaults["x"].to("");
     REQUIRE(maybe_foo);
     REQUIRE_EQ(*maybe_foo, "foo");
     auto const foo = defaults["x"] | "";
     REQUIRE_EQ(foo, "foo");
 
     REQUIRE_FALSE(defaults.contains("y"));
-    auto const maybe_nothing = defaults["y"].to<std::string>();
+    auto const maybe_nothing = defaults["y"].to("");
     REQUIRE_FALSE(maybe_nothing);
     auto const bar = defaults["y"] | "bar";
     REQUIRE_EQ(bar, "bar");
