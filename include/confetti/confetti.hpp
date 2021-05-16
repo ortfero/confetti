@@ -494,7 +494,7 @@ private:
         std::vector<T> result;
         result.reserve(data.size());
         for(auto const& each: data) {
-            std::optional<T> const item = each.to(T{});
+            std::optional<T> const item = each | T{};
             if(!item)
                 return std::nullopt;
             result.emplace_back(*item);
