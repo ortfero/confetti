@@ -36,6 +36,7 @@ int main() {
 ### Read basic properties
 
 ```cpp
+#include <optional>
 #include <confetti/confetti.hpp>
 
 int main() {
@@ -48,11 +49,11 @@ int main() {
     if(!parsed)
         return -1;
     confetti::value const& section = parsed.config["default"];
-    int const a = section["a"] | 0;
-    double const b = section["b"] | 0.0;
-    std::string const c = section["c"] | "";
-    std::string const d = section["d"] | "";
-    bool const e = section["e"] | false;
+    std::optional<int> const a = section["a"] | 0;
+    std::optional<double> const b = section["b"] | 0.0;
+    std::optional<std::string> const c = section["c"] | "";
+    std::optional<std::string> const d = section["d"] | "";
+    std::optional<bool> const e = section["e"] | false;
     return 0;
 }
 ```
@@ -60,6 +61,7 @@ int main() {
 ### Read arrays
 
 ```cpp
+#include <optional>
 #include <vector>
 #include <confetti/confetti.hpp>
 
@@ -71,12 +73,7 @@ int main() {
     if(!parsed)
         return -1;
     confetti::value const& section = parsed.config["section"];
-    std::string const data = section["data"];
-    if(!data.is_array())
-        return -1;
-    std::vector<int> vector;
-    for(std::size_t i = 0; i != data.size(); ++i)
-        vector.push_back(data[i] | 0);
+    std::optional<std::vector<int>> const data = section["data"] | std::vector<int>{};
     return 0;
 }
 ```
@@ -96,10 +93,8 @@ int main() {
         return -1;
     confetti::value const& gods = parsed.config["gods"];
     confetti::value const& anubis = gods["anubis"];
-    if(!anubis.is_table())
-        return -1;
-    std::string const name = anubis["name"] | "";
-    std::string const sex = anubis["sex"] | "";
+    std::optional<std::string> const name = anubis["name"] | "";
+    std::optional<std::string> const sex = anubis["sex"] | "";
     return 0;
 }
 ```
