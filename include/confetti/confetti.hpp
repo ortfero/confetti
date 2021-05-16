@@ -373,58 +373,58 @@ public:
     }
 
     std::optional<std::vector<bool>>
-    operator | (std::vector<bool> const& bydefault) const {
+    operator | (std::vector<bool> bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
-            return {bydefault};
+            return {std::move(bydefault)};
         return parse_array<bool>();
     }
 
     std::optional<std::vector<int>>
-    operator | (std::vector<int> const& bydefault) const {
+    operator | (std::vector<int> bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
-            return {bydefault};
+            return {std::move(bydefault)};
         return parse_array<int>();
     }
 
     std::optional<std::vector<unsigned>>
     operator | (std::vector<unsigned> const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
-            return {bydefault};
+            return {std::move(bydefault)};
         return parse_array<unsigned>();
     }
 
     std::optional<std::vector<long long>>
-    operator | (std::vector<long long> const& bydefault) const {
+    operator | (std::vector<long long> bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<long long>();
     }
 
     std::optional<std::vector<unsigned long long>>
-    operator | (std::vector<unsigned long long> const& bydefault) const {
+    operator | (std::vector<unsigned long long> bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<unsigned long long>();
     }
 
     std::optional<std::vector<double>>
-    operator | (std::vector<double> const& bydefault) const {
+    operator | (std::vector<double> bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<double>();
     }
 
     std::optional<std::vector<std::string_view>>
-    operator | (std::vector<std::string_view> const& bydefault) const {
+    operator | (std::vector<std::string_view> bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::move(bydefault)};
         return parse_array<std::string_view>();
     }
 
     std::optional<std::vector<std::string>>
-    operator | (std::vector<std::string> const& bydefault) const {
+    operator | (std::vector<std::string> bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
-            return {bydefault};
+            return {std::move(bydefault)};
         return parse_array<std::string>();
     }
 
