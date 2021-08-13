@@ -112,3 +112,29 @@ int main() {
     return 0;
 }
 ```
+
+## Tests
+
+To build tests:
+
+```shell
+cd confetti
+mkdir build
+cd build
+meson ../tests
+ninja
+```
+
+## Installation
+
+Drop `confetti/*` somewhere at include path.
+
+
+## Supported platforms and compilers
+
+confetti requires C++ 17 compiler.
+
+
+## License
+
+confetti licensed under [MIT license](https://opensource.org/licenses/MIT).
