@@ -276,7 +276,7 @@ TEST_CASE("parse inline array of tables") {
     auto const& table2 = data[1];
     auto const k2 = table2["k"] | "";
     REQUIRE(k1);
-    REQUIRE_EQ(*k1, "bar");
+    REQUIRE_EQ(*k2, "bar");
     auto const v2 = table2["v"] | "";
     REQUIRE(v2);
     REQUIRE_EQ(*v2, "foo");
