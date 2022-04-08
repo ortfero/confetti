@@ -1,6 +1,5 @@
-project('confetti-test', 'cpp',
-  default_options: ['cpp_std=c++17'])
+confetti_test = executable('confetti-test',
+    'test.cpp',
+    dependencies: [confetti])
 
-incdirs = include_directories('../include')
-
-executable('confetti-test', 'test.cpp', include_directories: incdirs)
+test('all', confetti_test)
