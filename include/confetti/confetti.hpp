@@ -1,24 +1,6 @@
-/* This file is part of confetti library
- * Copyright (c) 2020-2021 Andrei Ilin <ortfero@gmail.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// This file is part of confetti library
+// Copyright 2020-2022 Andrei Ilin <ortfero@gmail.com>
+// SPDX-License-Identifier: MIT
 
 #pragma once
 
@@ -227,8 +209,8 @@ public:
         auto const found = table.find(std::string_view{name, N - 1});
         if (found == table.end())
             return none;
-        return found->second;		
-    } 
+        return found->second;
+    }
 
     value *insert(std::string_view const &name, value &&value) {
         table_ptr const *p = std::get_if<table_ptr>(&holder_);
@@ -275,13 +257,13 @@ public:
     bool contains(char const (&name)[N]) const noexcept {
         return contains(std::string_view{name, N - 1});
     }
-    
+
     std::optional<bool> operator | (bool bydefault) const noexcept {
         using detail::ascii::lower_case;
-        
+
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
-        
+
         std::string_view const *p = std::get_if<std::string_view>(&holder_);
         if (p == nullptr)
             return std::nullopt;
@@ -310,32 +292,32 @@ public:
     std::optional<int> operator | (int bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
-        return parse_signed<int>();	
+        return parse_signed<int>();
     }
-    
+
     std::optional<unsigned> operator | (unsigned bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_unsigned<unsigned>();
     }
-    
+
     std::optional<long long> operator | (long long bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_signed<long long>();
     }
-    
+
     std::optional<unsigned long long>
     operator | (unsigned long long bydefault) const noexcept {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
         return parse_unsigned<unsigned long long>();
     }
-    
+
     std::optional<double> operator | (double bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {bydefault};
-        
+
         std::string_view const *p = std::get_if<std::string_view>(&holder_);
         if (p == nullptr)
             return std::nullopt;
@@ -359,7 +341,7 @@ public:
             return std::nullopt;
     #endif
 
-        return {number};	
+        return {number};
     }
 
     std::optional<std::string_view>
@@ -372,7 +354,7 @@ public:
 
         return {*p};
     }
-    
+
     std::optional<std::string> operator | (char const* bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
             return {std::string{bydefault}};
@@ -382,7 +364,7 @@ public:
 
         return {std::string{p->begin(), p->end()}};
     }
-    
+
     std::optional<std::string>
     operator | (std::string const& bydefault) const {
         if(std::holds_alternative<std::monostate>(holder_))
@@ -459,7 +441,7 @@ private:
 
 	value(std::string_view const& sv) noexcept: holder_{sv} { }
 	value(array_ptr p) noexcept: holder_{std::move(p)} { }
-	value(table_ptr p) noexcept: holder_{std::move(p)} { }	
+	value(table_ptr p) noexcept: holder_{std::move(p)} { }
 
 	template<typename T> std::optional<T> parse_unsigned() const noexcept {
 			std::string_view const *p = std::get_if<std::string_view>(&holder_);
@@ -469,7 +451,7 @@ private:
 			char const *head = p->data();
 			char const *tail = p->data() + p->size();
 			int radix = 10;
-			
+
 	    switch (*head) {
 	    case '+':
 	    		++head;
@@ -490,36 +472,36 @@ private:
 
 			T number;
 			auto const parsed = std::from_chars(head, tail, number, radix);
-				
+
 			if (parsed.ec == std::errc::invalid_argument || parsed.ptr != tail)
 					return std::nullopt;
-				
-			return {number};		
+
+			return {number};
 	}
 
 	template<typename T> std::optional<T> parse_signed() const noexcept {
 		std::string_view const *p = std::get_if<std::string_view>(&holder_);
 		if (p == nullptr)
 			return std::nullopt;
-			
+
 		char const *head = p->data();
 		char const *tail = p->data() + p->size();
-			
+
 		if (*head == '+')
 			++head;
-			
+
 		if (head == tail)
 			return std::nullopt;
-			
+
 		T number;
 		auto const parsed = std::from_chars(head, tail, number);
-			
+
 		if (parsed.ec == std::errc::invalid_argument || parsed.ptr != tail)
 			return std::nullopt;
-			
-		return {number};	
+
+		return {number};
 	}
-	
+
 	template<typename T> std::optional<std::vector<T>> parse_array() const {
         array_ptr const* p = std::get_if<array_ptr>(&holder_);
         if (p == nullptr)
@@ -561,7 +543,7 @@ struct result {
     explicit result(std::unique_ptr<char[]> source) noexcept:
         source(std::move(source)), config{value::make_table()}
     { }
-        
+
     explicit operator bool() const noexcept {
         return !error_code;
     }
@@ -652,8 +634,8 @@ skipped_whitespaces:
         default:
             return scan_word();
         }
-        // clang-format on			
-    }	
+        // clang-format on
+    }
 
     private:
     char* cursor_{nullptr};
@@ -687,7 +669,7 @@ skipped_whitespaces:
             case Q:
                 tail_ = cursor_;
                 ++cursor_;
-                return token::text;				
+                return token::text;
             default:
                 ++cursor_;
                 continue;
